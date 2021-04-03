@@ -2,4 +2,4 @@ cmake_minimum_required(VERSION 2.8)
 
 PROJECT(IReminder)
 
-add_executable(IReminder)
+add_executable(IReminder main.c)
