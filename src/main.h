@@ -33,5 +33,18 @@ typedef struct iConfig{
     struct tm s_date;//
 } iConfig;
 
-
+/**
+ * check config with argument
+ * @param config
+ * @param err
+ * @return
+ */
 int check_config(struct iConfig config, char* err);
+
+/**
+ * config save in file
+ * @param config
+ * @param err
+ * @return
+ */
+int save_config(struct  iConfig config, char* err);

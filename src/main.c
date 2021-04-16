@@ -124,3 +124,11 @@ int check_config(struct iConfig config, char* err){
 
     return 0;
 }
+
+int save_config(struct  iConfig config, char* err){
+
+    
+
+
+    return 0;
+}
