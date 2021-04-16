@@ -2,6 +2,7 @@
 #include "main.h"
 #include "string.h"
 #include "stdio.h"
+#include "time.h"
 
 int main(int argc, char** argv){
 
@@ -42,8 +43,20 @@ int main(int argc, char** argv){
         } else if (argc >= 2 && !strcmp(argv[0], "-s"))
         {
             argc--;argv++;
-            char *ptr;
-            config.s_date = strtol(argv[0], &ptr, 32);
+            struct tm tm = {0};
+
+            int year, month, day;
+
+            if (sscanf(argv[0], "%d-%d-%d", &year, &month, &day) == 3){
+                tm.tm_year = year - 1900;
+                tm.tm_mon = month -1;
+                tm.tm_mday = day;
+            } else{
+                fprintf(stderr, "Invalid argument %s \n", argv[0]);
+                exit(1);
+            }
+
+            config.s_date = tm;
         } else if (argc >= 2 && !strcmp(argv[0], "-d"))
         {
             argc--;argv++;
@@ -58,8 +71,7 @@ int main(int argc, char** argv){
             argc--;argv++;
             char *ptr;
             config.d_time = strtol(argv[0], &ptr, 32);
-        }
-        else
+        } else
         {
             fprintf(stderr, "Invalid argument %s \n", argv[0]);
             exit(1);

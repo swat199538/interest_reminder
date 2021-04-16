@@ -1,3 +1,5 @@
+#include <time.h>
+
 #ifndef INTEREST_REMINDER_MAIN_H
 #define INTEREST_REMINDER_MAIN_H
 
@@ -20,7 +22,7 @@ typedef struct iConfig{
     long p_day;//
 
     // start time
-    long s_date;//
+    struct tm s_date;//
 } iConfig;
 
 
