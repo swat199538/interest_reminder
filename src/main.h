@@ -5,6 +5,14 @@
 
 #endif //INTEREST_REMINDER_MAIN_H
 
+#define CL_NAME "-n"
+#define CL_MONEY "-m"
+#define CL_S_DATE "-s"
+#define CL_P_DAY "-d"
+#define CL_RATE "-r"
+#define CL_D_TIME "-c"
+#define CL_SHOW "show"
+
 typedef struct iConfig{
     // The name of the account
     char * name;//
