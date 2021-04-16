@@ -3,14 +3,9 @@
 #include "string.h"
 #include "stdio.h"
 #include "time.h"
+#include "cJSON.h"
 
 int main(int argc, char** argv){
-
-    //start schedule task
-    if (argc == 1){
-
-        return 0;
-    }
 
     struct iConfig config = {
             .rate = 0,
@@ -20,6 +15,15 @@ int main(int argc, char** argv){
             .p_day=0,
             .s_date=0
     };
+
+    //start schedule task
+    if (argc == 1){
+        char* err;
+        save_config(config, err);
+        return 0;
+    }
+
+
 
     argc--; argv++;
 
@@ -90,6 +94,9 @@ int main(int argc, char** argv){
     return 0;
 }
 
+/**
+ * check config
+ */
 int check_config(struct iConfig config, char* err){
 
     if (!strcmp(config.name, "")){
@@ -125,10 +132,21 @@ int check_config(struct iConfig config, char* err){
     return 0;
 }
 
+/**
+ * save config
+ */
 int save_config(struct  iConfig config, char* err){
 
-    
+    cJSON* pRoot = cJSON_CreateObject();
 
+    cJSON* pItem = cJSON_CreateObject();
+
+    cJSON_AddStringToObject(pItem, "name", "config.name");
+    cJSON_AddItemToObject(pRoot, "0", pItem);
+
+    char* json = cJSON_Print(pRoot);
+
+    printf("%s", json);
 
     return 0;
 }

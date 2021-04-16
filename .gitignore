@@ -1,3 +1,4 @@
 .idea
 .vsc
 src/cmake-build-debug
+src/cmake-build-release
