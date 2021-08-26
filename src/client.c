@@ -1,5 +1,5 @@
 #include <stdlib.h>
-#include "main.h"
+#include "client.h"
 #include "string.h"
 #include "stdio.h"
 #include "time.h"
