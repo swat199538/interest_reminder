@@ -4,15 +4,37 @@
 
 #include "server.h"
 #include <unistd.h>
+#include "stddef.h"
+#include "time.h"
+#include "pthread.h"
 
-iRServer server;
+/*================================= Globals ================================= */
+struct iRServer server;
 
-int main(int argc, char** argv){
 
-    return 0;
+/*============================ Utility functions ============================ */
+void initServerConfig(){
+    server.port = IR_SERVER_PORT;
+    server.bindaddr = IR_SERVER_BIND_ADDR;
 }
+
 
 void initServer(){
     server.pid = getpid();
+    server.thread_id = pthread_self();
+}
 
+
+/*================================= Globals ================================= */
+int main(int argc, char** argv){
+
+    time_t start;
+
+    initServerConfig();
+
+    initServer();
+
+    start = time(NULL)
+
+    return 0;
 }
