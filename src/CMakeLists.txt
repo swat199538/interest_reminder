@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8)
 
-PROJECT(IReminder)
+ADD_SUBDIRECTORY(server)
 
-add_executable(IReminder server.c cJSON.c util.c)
+add_subdirectory(client)

@@ -10,9 +10,9 @@
 #include "signal.h"
 #include "stdlib.h"
 #include "fcntl.h"
-#include "util.h"
+#include "../common/util.h"
 #include "string.h"
-
+#include "stdio.h"
 #ifdef __linux__
 #include <sys/mman.h>
 #endif
@@ -105,6 +105,8 @@ int main(int argc, char** argv){
     initServer();
 
     start = time(NULL);
+
+    printf("%d", start);
 
     return 0;
 }
