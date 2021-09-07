@@ -28,8 +28,11 @@ static  void make_edge(const unsigned  int *col_width, const unsigned  int col_n
     int col_line_counter, row_line_counter;
 
     for(col_line_counter=0; col_line_counter < col_num; col_line_counter++){
-        strcat(edge, ROW_LINE)
+        strcat(edge, ROW_LINE);
+        for()
     }
+
+
 
 }
 
