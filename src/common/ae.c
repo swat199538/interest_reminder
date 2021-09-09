@@ -3,3 +3,17 @@
 //
 
 #include "ae.h"
+#include "ae_epoll.c"
+#include "zmalloc.h"
+
+aeEventLoop *aeCreateEventLoop(){
+    aeEventLoop *eventLoop;
+    int i;
+
+
+
+}
+
+int aeMain(aeEventLoop *eventLoop){
+
+}

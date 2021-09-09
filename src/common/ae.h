@@ -39,4 +39,17 @@ typedef struct aeEventLoop{
     aeBeforeSleepProc *beforeSleepProc;
 } aeEventLoop;
 
+aeEventLoop *aeCreateEventLoop();
+void aeDeleteEventLoop(aeEventLoop *eventLoop);
+void aeEventLoopStop (aeEventLoop *eventLoop);
+long long aeCreateTimeEvent(aeEventLoop *eventLoop, long long milliseconds,
+          aeTimeProc *proc, void *clientData,
+          aeEventFinalizerProc *finalizerProc);
+int aeDeleteTimeEvent(aeEventLoop *eventLoop, long long id);
+int aeProcessEvents(aeEventLoop *eventLoop, int flags);
+int aeWait(int fd, int mask, long long milliseconds);
+int aeMain(aeEventLoop *eventLoop);
+char *aeGetApiName(void);
+void aeSetBeforeSleepProc(aeEventLoop *eventLoop, aeBeforeSleepProc *beforeSleep);
+
 #endif //INTEREST_REMINDER_AE_H
