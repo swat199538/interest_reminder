@@ -3,7 +3,7 @@
 //
 #include "sys/epoll.h"
 
-static char *aeGetApiName(){
+static char *aeApiName(){
     return "epoll";
 }
 

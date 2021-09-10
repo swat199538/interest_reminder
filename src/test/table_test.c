@@ -1,42 +1,54 @@
 //
 // Created by wangl on 8/29/2021.
 //
-
-#include <unistd.h>
-#include "table_test.h"
 #include "stdio.h"
-#include "stdlib.h"
 #include "../common/ae.h"
-#include "../common/zmalloc.h"
 
+static int process_time(struct aeEventLoop *eventLoop, long long id, void *clientData){
+    (*(int*)clientData)++;
+    int count = *(int*)clientData;
+    printf("time even fire\n");
+    printf("client data is %d\n", count);
+    if (count >=1){
+        return -1;
+    }
+    return 30000;
+}
 
+static void time_event_end(struct aeEventLoop *aeEventLoop, void *clientData){
+
+    char *pm = "⠀⠀⠀⠀⠀⠀⠀⠀⢀⣠⠴⠒⠛⠲⡄⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀\n"
+               "⠀⠀⠀⠀⡀⠀⢀⠀⢻⡄⣠⠶⣆⠀⣸⣀⣀⠀⠀⡀⠀⢀⠀⢀⠀⠀\n"
+               "⠀⠀⠀⠁⠀⠀⢀⡠⠬⠛⢓⣏⠉⣾⣉⣀⠉⢹⡀⠀⠀⠀⠀⠀⠀⠀\n"
+               "⠀⠀⠐⠀⢀⡖⠋⣠⠴⠛⠙⢹⠞⢳⢀⣨⡵⠚⠀⠀⠀⠐⠀⠀⠂⠀\n"
+               "⠀⠀⠀⣰⠋⡠⠎⠁⣀⠤⠒⠚⠛⠙⠒⠳⠤⣄⡀⠀⠠⠀⠀⠄⠀⠠\n"
+               "⠀⠀⠀⠘⠐⢼⠖⠋⠀⠀⢀⠀⠀⠀⠀⠀⠀⠘⣌⡒⠲⢹⠀⠀⠀⠀\n"
+               "⠀⠀⠈⠀⡸⠁⠀⠀⠀⠀⡆⠀⠀⠐⠀⠢⣄⠀⡽⡙⡲⠑⠒⠒⡒⠁\n"
+               "⢀⡠⠴⠚⠀⠀⠀⠀⠀⣕⠝⣄⡀⢀⠀⠀⡇⠵⢍⠚⢾⡀⢠⠖⠁⠀\n"
+               "⠈⠦⣄⣀⠀⡔⠀⠀⢁⡞⠀⠉⠲⣄⡀⢲⢼⠀⢀⠳⡄⠁⠀⢣⠀⠀\n"
+               "⠀⠀⣠⠃⢐⠄⠀⠀⠴⠅⠠⡊⡢⠀⠉⠉⠁⠀⢆⠕⠹⡀⠀⠈⡆⠀\n"
+               "⠀⠠⡇⠀⡸⠀⠀⠀⠨⡅⠀⠒⠈⠀⢄⠠⠠⠔⠀⠀⠀⢻⠀⠀⢣⠀\n"
+               "⠀⢸⠅⠀⡕⠀⠀⠀⠀⣇⠀⠀⠀⠀⠀⠀⠀⠀⠀⣀⡤⡏⠀⠀⢸⠀\n"
+               "⠀⠈⡇⠀⣣⠀⠀⠈⠀⠸⡦⠴⠲⢚⢚⠙⠝⠙⠍⠝⣱⠏⢠⠀⢸⠅\n"
+               "⠀⠀⠙⣆⠘⣄⠀⠠⣄⠀⠹⣌⠌⠀⠂⠐⢈⠄⡁⢌⠳⣺⠏⢀⡞⠀\n"
+               "⠀⠀⠀⠀⠙⠺⠛⣲⠜⠟⡓⡚⣏⣔⡀⡌⣀⢂⣔⠴⠋⢏⠒⠁";
+
+    printf("%s is last data\n", pm);
+    aeStop(aeEventLoop);
+}
 
 int main(int argc, char **argv){
 
-    size_t real_size = sizeof(Point);
+    int count = 0;
 
-    Point *point = (Point *)zmalloc(sizeof(Point));
+    aeEventLoop *eventLoop = aeCreateEventLoop();
 
-    point->x = 1;
-    point->y = 1;
+    aeCreateTimeEvent(eventLoop, 30000, process_time, &count, time_event_end);
 
-    size_t pontSize;
+    aeMain(eventLoop);
 
-    void *total_pont;
-
-    total_pont = (char *)point - real_size;
-
-    pontSize = *((size_t*)total_pont);
-
-    printf("real size is %zu, %zu is pont struct size\n", real_size, pontSize);
-
-    printf("used memory is %zu\n", zmalloc_used());
-
-    printf("memory free\n");
-
-    zfree(point);
-
-    printf("used memory is %zu\n", zmalloc_used());
+    printf("event loop end\n");
 
     return 0;
 }
+

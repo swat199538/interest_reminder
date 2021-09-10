@@ -14,8 +14,10 @@
 
 #define AE_FILE_EVENTS 1
 #define AE_TIME_EVENTS 2
-#define AE_ALL_EVENTS (AE_FILE_EVENTS | AE_TIME_EVENTS)
+#define AE_ALL_EVENTS (AE_TIME_EVENTS)
 #define AE_DONT_WAIT 4
+
+#define AE_NOMORE -1
 
 struct aeEventLoop;
 
@@ -28,7 +30,7 @@ typedef struct aeTimeEvent{
     long when_sec;
     long when_ms;
     aeTimeProc *timeProc;
-    aeEventFinalizerProc *eventFinalizerProc;
+    aeEventFinalizerProc *finalizerProc;
     void *clientData;
     struct aeTimeEvent *next;
 } aeTimeEvent;
