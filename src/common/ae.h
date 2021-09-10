@@ -5,10 +5,12 @@
 #ifndef INTEREST_REMINDER_AE_H
 #define INTEREST_REMINDER_AE_H
 
+#define AE_SETSIZE (1024*10)
+
 #define AE_OK 0
 #define AE_ERR -1
 
-#define AE_NONE 0
+#define AE_NONE -1
 
 #define AE_FILE_EVENTS 1
 #define AE_TIME_EVENTS 2
@@ -41,7 +43,7 @@ typedef struct aeEventLoop{
 
 aeEventLoop *aeCreateEventLoop();
 void aeDeleteEventLoop(aeEventLoop *eventLoop);
-void aeEventLoopStop (aeEventLoop *eventLoop);
+void aeStop (aeEventLoop *eventLoop);
 long long aeCreateTimeEvent(aeEventLoop *eventLoop, long long milliseconds,
           aeTimeProc *proc, void *clientData,
           aeEventFinalizerProc *finalizerProc);
