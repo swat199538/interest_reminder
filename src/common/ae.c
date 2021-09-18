@@ -162,9 +162,21 @@ int aeProcessEvents(aeEventLoop *eventLoop, int flags){
     return processed;
 }
 
+int aeCreateFileEvent(aeEventLoop *eventLoop, int fd, int mask,
+      aeFileProc *proc, void *clientData)
+{
+    if (fd >= AE_SETSIZE) return AE_ERR;
+
+    aeFileEvent *fe = &eventLoop->events[fd];
+
+    if ()
+
+    return AE_OK;
+}
+
 long long aeCreateTimeEvent(aeEventLoop *eventLoop, long long milliseconds,
-                            aeTimeProc *proc, void *clientData,
-                            aeEventFinalizerProc *finalizerProc)
+     aeTimeProc *proc, void *clientData,
+     aeEventFinalizerProc *finalizerProc)
 {
     long long id = eventLoop->timeEventNextId++;
     aeTimeEvent *te;
@@ -206,11 +218,15 @@ int aeDeleteTimeEvent(aeEventLoop *eventLoop, long long id){
     return AE_ERR;
 }
 
-int aeMain(aeEventLoop *eventLoop){
+void aeMain(aeEventLoop *eventLoop){
     eventLoop->stop = 0;
     while (!eventLoop->stop){
         if (eventLoop->beforeSleep)
             eventLoop->beforeSleep(eventLoop);
         aeProcessEvents(eventLoop, AE_ALL_EVENTS);
     }
+}
+
+void aeSetBeforeSleepProc(aeEventLoop *eventLoop, aeBeforeSleepProc *beforeSleep){
+    eventLoop->beforeSleep = beforeSleep;
 }

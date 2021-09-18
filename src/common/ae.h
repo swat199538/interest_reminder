@@ -11,6 +11,8 @@
 #define AE_ERR -1
 
 #define AE_NONE -1
+#define AE_READABLE = 1
+#define AE_WRITEABLE = 2
 
 #define AE_FILE_EVENTS 1
 #define AE_TIME_EVENTS 2
@@ -62,13 +64,15 @@ typedef struct aeEventLoop{
 aeEventLoop *aeCreateEventLoop();
 void aeDeleteEventLoop(aeEventLoop *eventLoop);
 void aeStop (aeEventLoop *eventLoop);
+int aeCreateFileEvent(aeEventLoop *eventLoop, int fd, int mask,
+          aeFileProc *proc, void *clientData);
 long long aeCreateTimeEvent(aeEventLoop *eventLoop, long long milliseconds,
           aeTimeProc *proc, void *clientData,
           aeEventFinalizerProc *finalizerProc);
 int aeDeleteTimeEvent(aeEventLoop *eventLoop, long long id);
 int aeProcessEvents(aeEventLoop *eventLoop, int flags);
 int aeWait(int fd, int mask, long long milliseconds);
-int aeMain(aeEventLoop *eventLoop);
+void aeMain(aeEventLoop *eventLoop);
 char *aeGetApiName(void);
 void aeSetBeforeSleepProc(aeEventLoop *eventLoop, aeBeforeSleepProc *beforeSleep);
 
