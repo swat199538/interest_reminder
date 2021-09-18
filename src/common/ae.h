@@ -21,9 +21,17 @@
 
 struct aeEventLoop;
 
+typedef void aeFileProc(struct aeEventLoop *eventLoop, int fd, void *clientData, int mask);
 typedef int aeTimeProc(struct aeEventLoop *eventLoop, long long id, void *clientData);
 typedef void aeEventFinalizerProc(struct aeEventLoop *aeEventLoop, void *clientData);
 typedef void aeBeforeSleepProc(struct aeEventLoop *eventLoop);
+
+typedef struct aeFileEvent{
+    int mask;
+    aeFileProc *rFileProc;
+    aeFileProc *wFileProc;
+    void *clientData;
+} aeFileEvent;
 
 typedef struct aeTimeEvent{
     long long id;
@@ -35,12 +43,20 @@ typedef struct aeTimeEvent{
     struct aeTimeEvent *next;
 } aeTimeEvent;
 
+typedef struct aeFiredEvent{
+    int fd;
+    int mask;
+} aeFiredEvent;
+
 typedef struct aeEventLoop{
     int maxFd;
     long long timeEventNextId;
+    aeFileEvent events[AE_SETSIZE];
+    aeFiredEvent fired[AE_SETSIZE];
     aeTimeEvent *timeEventHead;
     int stop;
-    aeBeforeSleepProc *beforeSleepProc;
+    void *apiData;
+    aeBeforeSleepProc *beforeSleep;
 } aeEventLoop;
 
 aeEventLoop *aeCreateEventLoop();

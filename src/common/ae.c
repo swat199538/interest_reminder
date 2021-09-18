@@ -3,7 +3,12 @@
 //
 
 #include "ae.h"
+#include "config.h"
+
+#ifdef HAVE_EPOLL
 #include "ae_epoll.c"
+#endif
+
 #include "zmalloc.h"
 #include <sys/time.h>
 
@@ -88,14 +93,20 @@ aeEventLoop *aeCreateEventLoop(){
     aeEventLoop *eventLoop;
     int i;
 
-    eventLoop = (aeEventLoop *)zmalloc(sizeof(aeEventLoop));
+    eventLoop = zmalloc(sizeof(*eventLoop));
     if (!eventLoop) eventLoop = NULL;
     eventLoop->timeEventHead = NULL;
     eventLoop->timeEventNextId = 0;
     eventLoop->stop=0;
     eventLoop->maxFd=-1;
-    eventLoop->beforeSleepProc = NULL;
+    eventLoop->beforeSleep = NULL;
+    if (aeApiCreate(eventLoop) == -1){
+        zfree(eventLoop);
+        return NULL;
+    }
 
+    for (i = 0; i < AE_SETSIZE ; i++)
+        eventLoop->events[i].mask = AE_NONE;
     return eventLoop;
 }
 
@@ -198,8 +209,8 @@ int aeDeleteTimeEvent(aeEventLoop *eventLoop, long long id){
 int aeMain(aeEventLoop *eventLoop){
     eventLoop->stop = 0;
     while (!eventLoop->stop){
-        if (eventLoop->beforeSleepProc)
-            eventLoop->beforeSleepProc(eventLoop);
+        if (eventLoop->beforeSleep)
+            eventLoop->beforeSleep(eventLoop);
         aeProcessEvents(eventLoop, AE_ALL_EVENTS);
     }
 }
