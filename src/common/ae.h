@@ -11,8 +11,8 @@
 #define AE_ERR -1
 
 #define AE_NONE -1
-#define AE_READABLE = 1
-#define AE_WRITEABLE = 2
+#define AE_READABLE  1
+#define AE_WRITEABLE 2
 
 #define AE_FILE_EVENTS 1
 #define AE_TIME_EVENTS 2
