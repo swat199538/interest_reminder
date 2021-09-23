@@ -6,6 +6,8 @@
 #define IREMINDER_SERVER_H
 
 #include <bits/types/sig_atomic_t.h>
+#include "../common/ae.h"
+#include "../common/anet.h"
 
 #define IR_SERVER_PORT 9538
 #define IR_SERVER_BIND_ADDR "127.0.0.0"
@@ -31,7 +33,10 @@ struct iRServer{
     char *logfile;
     int verbosity;
     int daemonize;  /* True if running as a daemon */
-
+    aeEventLoop *el; //event loop
+    int fd;//socket fd
+    char neterr[ANET_ERR_LEN];
+    long long stat_numconnections;
 };
 
 
