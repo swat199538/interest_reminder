@@ -20,6 +20,10 @@ typedef struct list{
     listNode *head;
     listNode *tail;
     void *(*dup)(void *ptr);
+    void (*free)(void *ptr);
+    int (*match)(void *ptr, void *key);
 } list;
+
+
 
 #endif //INTEREST_REMINDER_ADLIST_H
