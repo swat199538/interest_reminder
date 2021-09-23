@@ -3,12 +3,14 @@
 //
 #include "anet.h"
 #include <netinet/in.h>
+#include <netinet/tcp.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <string.h>
 #include <errno.h>
 #include <unistd.h>
 #include <arpa/inet.h>
+#include <fcntl.h>
 
 static void anetSetError(char *err, const char *fmt, ...)
 {
@@ -84,4 +86,32 @@ int anetAccept(char *err, int serverSock, char *ip, int *port)
     if (port) *port = ntohs(sa.sin_port);
 
     return fd;
+}
+
+int anetNonBlock(char *err, int fd)
+{
+    int flags;
+
+    if ((flags = fcntl(fd, F_GETFL)) == -1){
+        anetSetError(err, "fcntl(F_GETFL):%s\n", strerror(errno));
+        return ANET_ERR;
+    }
+    if (fcntl(fd, F_SETFL, flags | O_NONBLOCK) == -1){
+        anetSetError(err, "fcntl(F_SETFL):%s\n", strerror(errno));
+        return ANET_ERR;
+    }
+
+    return ANET_OK;
+}
+
+int anetNonDelay(char *err, int fd)
+{
+    int yes = 1;
+
+    if (setsockopt(fd, IPPROTO_TCP, TCP_NODELAY, &yes, sizeof(yes)) == -1){
+        anetSetError(err, "setsockopt TCP_NODELAY: %s\n", strerror(errno));
+        return ANET_ERR;
+    }
+
+    return ANET_OK;
 }

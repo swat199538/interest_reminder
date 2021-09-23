@@ -11,10 +11,10 @@
 #include "../common/util.h"
 #include "string.h"
 #include "stdio.h"
+#include "../common/zmalloc.h"
 #ifdef __linux__
 #include <sys/mman.h>
 #include <stdarg.h>
-
 #endif
 
 /* Anti-warning macro... */
@@ -48,7 +48,14 @@ static int serverCron(struct aeEventLoop *eventLoop, long long id, void *clientD
 
 static iRClient *createClient(int fd)
 {
-    return NULL;
+    iRClient *client = zmalloc(sizeof(struct iRClient));
+
+    anetNonBlock(NULL, fd);
+    anetNonDelay(NULL, fd);
+    if (!client) return NULL;
+    client->fd = fd;
+
+    return client;
 }
 
 static void freeClient(iRClient *c)

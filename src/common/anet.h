@@ -11,5 +11,7 @@
 
 int anetTcpServer(char *err, int port, char *addr);
 int anetAccept(char *err, int serverSock, char *ip, int *port);
+int anetNonBlock(char *err, int fd);
+int anetNonDelay(char *err, int fd);
 
 #endif //INTEREST_REMINDER_ANET_H
