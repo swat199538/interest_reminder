@@ -44,7 +44,7 @@ static void zmalloc_oom(size_t size){
 }
 
 void *zmalloc(size_t size){
-    void *ptr = malloc(size + PREFIX_SIZE);// malloc memory  is divided into recording areas and data areas
+    void *ptr = malloc(size + PREFIX_SIZE);// malloc memory  is divided into recording areas and value areas
     if (!ptr) zmalloc_oom(size); // malloc failed abort program
     (*(size_t *)ptr) = size; //recode memory size
     increment_used_memory(size + PREFIX_SIZE);

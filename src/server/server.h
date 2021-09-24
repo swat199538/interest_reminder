@@ -29,7 +29,7 @@ struct iRServer{
     int port; // tcp listen port
     char *pid_file; // pid file path
     volatile sig_atomic_t shutdown_asap;
-    volatile sig_atomic_t loading; /* We are loading data from disk if true */
+    volatile sig_atomic_t loading; /* We are loading value from disk if true */
     char *logfile;
     int verbosity;
     int daemonize;  /* True if running as a daemon */

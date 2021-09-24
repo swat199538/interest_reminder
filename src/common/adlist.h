@@ -5,10 +5,13 @@
 #ifndef INTEREST_REMINDER_ADLIST_H
 #define INTEREST_REMINDER_ADLIST_H
 
+#define AL_START_HEAD 0
+#define AL_START_TAIL 1
+
 typedef struct listNode{
     struct listNode *prev;
     struct listNode *next;
-    void *data;
+    void *value;
 } listNode;
 
 typedef struct listIter{
@@ -22,8 +25,16 @@ typedef struct list{
     void *(*dup)(void *ptr);
     void (*free)(void *ptr);
     int (*match)(void *ptr, void *key);
+    unsigned int len;
 } list;
 
+list *listCreate(void);
+void listRelease(list *list);
+list *listAddNodeHead(list *list, void *data);
+list *listAddNodeTail(list *list, void *data);
+void listDelNode(list *list, listNode *node);
+listIter *listGetIterator(list *list, int direction);
+void listReleaseIterator(listIter *iter);
 
 
 #endif //INTEREST_REMINDER_ADLIST_H
