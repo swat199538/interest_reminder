@@ -32,6 +32,7 @@ int anetTcpServer(char *err, int port, char *addr)
         return ANET_ERR;
     }
 
+    // When port is released, it can be immediately used once more.
     if (setsockopt(s, SOL_SOCKET, SO_REUSEADDR, &on, sizeof(on)) == -1){
         anetSetError(err, "setsockopt err: %s\n", strerror(errno));
         close(s);
