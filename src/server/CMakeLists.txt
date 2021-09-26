@@ -2,5 +2,7 @@ cmake_minimum_required(VERSION 2.8)
 
 PROJECT(IReminderServer)
 
-add_executable(IReminderServer server.c ../common/cJSON.c ../common/util.c ../common/config.h ../common/anet.c ../common/anet.h ../common/adlist.c ../common/adlist.h)
+set(IR_SERVER_LIST ../common/adlist.c ../common/ae.c ../common/anet.c server.c ../common/zmalloc.c ../common/util.c)
+
+add_executable(IReminderServer ${IR_SERVER_LIST})
 

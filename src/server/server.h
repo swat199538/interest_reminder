@@ -8,6 +8,7 @@
 #include <bits/types/sig_atomic_t.h>
 #include "../common/ae.h"
 #include "../common/anet.h"
+#include "../common/adlist.h"
 
 #define IR_SERVER_PORT 9538
 #define IR_SERVER_BIND_ADDR "127.0.0.0"
@@ -24,7 +25,8 @@ extern struct iRServer server;
 
 struct iRServer{
     int pid; // process id
-    int thread_id; //main thread id
+    list *client;//connected client
+    unsigned long int thread_id; //main thread id
     char *bindaddr;//bind ip address
     int port; // tcp listen port
     char *pid_file; // pid file path
@@ -37,15 +39,11 @@ struct iRServer{
     int fd;//socket fd
     char neterr[ANET_ERR_LEN];
     long long stat_numconnections;
+
 };
 
-
 void initServerConfig(void); // init server config
-
 void initServer(void); // init server
-
-void setupSignalHandlers(void);
-
 void serverLogFromHandler(int level, const char *msg);
 
 #endif //IREMINDER_SERVER_H

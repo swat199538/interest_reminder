@@ -121,12 +121,13 @@ void initServerConfig(){
     server.bindaddr = IR_SERVER_BIND_ADDR;
 }
 
-void initServer(){
+void initServer()
+{
     server.pid = getpid();
     server.thread_id = pthread_self();
     server.el = aeCreateEventLoop();
+    server.client = listCreate();
     server.fd = anetTcpServer(server.neterr, server.port, server.bindaddr);
-
     if (server.fd == -1){
         iRLog(IR_WARNING, "Opening TCP port: %s", server.neterr);
         exit(1);
@@ -164,16 +165,6 @@ static void acceptHandler(aeEventLoop *el, int fd, void *privdata, int mask)
     server.stat_numconnections++;
 }
 
-void setupSignalHandlers(void){
-    struct sigaction act;
-
-    sigemptyset(&act.sa_mask);
-
-    act.sa_flags = 0;
-    act.sa_handler = sigShutdownHandler;
-
-}
-
 void serverLogFromHandler(int level, const char *msg){
     int fd;
     int log_to_stdout = server.logfile[0] == '\0';
@@ -182,7 +173,7 @@ void serverLogFromHandler(int level, const char *msg){
     if ((level & 0xff) < server.verbosity || (log_to_stdout && server.daemonize))
         return;
     fd = log_to_stdout ? STDOUT_FILENO :
-                        open(server.logfile, O_APPEND|O_CLOEXEC|O_WRONLY, 0644);
+                        open(server.logfile, O_APPEND|O_WRONLY, 0644);
     if (fd == -1) return;
 
     ll2string(buf, sizeof(buf), getpid());

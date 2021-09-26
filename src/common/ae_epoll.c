@@ -1,7 +1,9 @@
 //
 // Created by swat on 9/8/2021.
 //
+#include <unistd.h>
 #include "sys/epoll.h"
+#include "zmalloc.h"
 
 typedef struct aeApiState{
     int epfd;
