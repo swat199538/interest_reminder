@@ -66,6 +66,7 @@ void aeDeleteEventLoop(aeEventLoop *eventLoop);
 void aeStop (aeEventLoop *eventLoop);
 int aeCreateFileEvent(aeEventLoop *eventLoop, int fd, int mask,
           aeFileProc *proc, void *clientData);
+void aeDeleteFileEvent(aeEventLoop *eventLoop, int fd, int mask);
 long long aeCreateTimeEvent(aeEventLoop *eventLoop, long long milliseconds,
           aeTimeProc *proc, void *clientData,
           aeEventFinalizerProc *finalizerProc);

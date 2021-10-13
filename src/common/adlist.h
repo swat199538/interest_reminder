@@ -28,6 +28,8 @@ typedef struct list{
     unsigned int len;
 } list;
 
+#define listLength(l) ((l)->len)
+
 list *listCreate(void);
 void listRelease(list *list);
 list *listAddNodeHead(list *list, void *data);

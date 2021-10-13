@@ -60,7 +60,11 @@ static iRClient *createClient(int fd)
 
 static void freeClient(iRClient *c)
 {
+    aeDeleteFileEvent(server.el, c->fd, AE_READABLE);
+    aeDeleteFileEvent(server.el, c->fd, AE_WRITEABLE);
+    close(c->fd);
 
+    zfree(c);
 }
 
 static void iRLog(int level, const char *fmt, ...)
@@ -86,6 +90,13 @@ static void iRLog(int level, const char *fmt, ...)
     }
     va_end(ap);
     if (server.logfile) fclose(fp);
+}
+
+static void oom(const char *msg)
+{
+    iRLog(IR_WARNING, "%s out of memory\n", msg);
+    sleep(1);
+    abort();
 }
 
 static void sigShutdownHandler(int sig){
@@ -119,6 +130,7 @@ static void sigShutdownHandler(int sig){
 void initServerConfig(){
     server.port = IR_SERVER_PORT;
     server.bindaddr = IR_SERVER_BIND_ADDR;
+    server.maxClients = 5;
 }
 
 void initServer()
@@ -134,8 +146,8 @@ void initServer()
     }
 
     aeCreateTimeEvent(server.el, 1, serverCron, NULL, NULL);
-
-
+    if (aeCreateFileEvent(server.el, server.fd, AE_READABLE, acceptHandler, NULL) == AE_ERR)
+        oom("create file event");
 }
 
 static void acceptHandler(aeEventLoop *el, int fd, void *privdata, int mask)
@@ -147,18 +159,23 @@ static void acceptHandler(aeEventLoop *el, int fd, void *privdata, int mask)
     IR_NOTUSED(privdata);
     IR_NOTUSED(mask);
 
-    cfd = anetAccept(server.neterr, fd, &cip, &cport);
+    cfd = anetAccept(server.neterr, fd, cip, &cport);
 
     if (cfd == ANET_ERR){
         iRLog(IR_VERBOSE, "Accepting client connection: %s", server.neterr);
         return;
     }
-
     iRLog(IR_VERBOSE,"Accepted %s:%d", cip, cport);
-
     if ((c = createClient(cfd)) == NULL){
         iRLog(IR_WARNING,"Error allocating resoures for the client");
         close(cfd);
+        return;
+    }
+
+    if (server.maxClients && listLength(server.client) > server.maxClients){
+        char *err = "-ERR max number of clients reached\r\n";
+        write(c->fd, err, strlen(err));
+        freeClient(c);
         return;
     }
 

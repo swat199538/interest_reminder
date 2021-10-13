@@ -39,7 +39,7 @@ struct iRServer{
     int fd;//socket fd
     char neterr[ANET_ERR_LEN];
     long long stat_numconnections;
-
+    unsigned int maxClients;
 };
 
 void initServerConfig(void); // init server config

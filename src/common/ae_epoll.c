@@ -52,10 +52,19 @@ static int aeApiAddEvent(aeEventLoop *eventLoop, int fd, int mask){
     return 0;
 }
 
-static void aeApiDel(aeEventLoop *eventLoop, int fd, int delmask){
+static void aeApiDelEvent(aeEventLoop *eventLoop, int fd, int delmask){
     aeApiState *state = eventLoop->apiData;
     struct epoll_event ee;
+    int mask = eventLoop->events[fd].mask & (~delmask);
 
-
-
+    ee.events = 0;
+    if (mask & AE_READABLE) ee.events |= EPOLLIN;
+    if (mask & AE_WRITEABLE) ee.events |= EPOLLOUT;
+    ee.data.u64 = 0; /* avoid valgrind warning */
+    ee.data.fd = fd;
+    if (mask != AE_NONE){
+        epoll_ctl(state->epfd, EPOLL_CTL_MOD, fd, &ee);
+    } else{
+        epoll_ctl(state->epfd, EPOLL_CTL_DEL, fd, &ee);
+    }
 }
