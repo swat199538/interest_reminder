@@ -4,6 +4,7 @@
 #include <unistd.h>
 #include "sys/epoll.h"
 #include "zmalloc.h"
+#include <sys/time.h>
 
 typedef struct aeApiState{
     int epfd;
@@ -67,4 +68,28 @@ static void aeApiDelEvent(aeEventLoop *eventLoop, int fd, int delmask){
     } else{
         epoll_ctl(state->epfd, EPOLL_CTL_DEL, fd, &ee);
     }
+}
+
+static int aeApiPool(aeEventLoop *eventLoop, struct timeval *tvp){
+    aeApiState *state = eventLoop->apiData;
+    int retval, numevents = 0;
+
+    retval = epoll_wait(state->epfd, state->events, AE_SETSIZE,
+               tvp ?  (tvp->tv_sec*1000 + tvp->tv_usec/1000) : -1);
+
+    if (retval > 0){
+        int j;
+
+        numevents = retval;
+        for (j = 0; j < numevents ; j++) {
+            int mask = 0;
+            struct epoll_event *e = state->events+j;
+            if (e->events & EPOLLIN)    mask |= AE_READABLE;
+            if (e->events & EPOLLOUT)   mask |= AE_WRITEABLE;
+            eventLoop->fired[j].fd = e->data.fd;
+            eventLoop->fired[j].mask = mask;
+        }
+    }
+
+    return numevents;
 }

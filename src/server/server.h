@@ -11,7 +11,7 @@
 #include "../common/adlist.h"
 
 #define IR_SERVER_PORT 9538
-#define IR_SERVER_BIND_ADDR "127.0.0.0"
+#define IR_SERVER_BIND_ADDR "127.0.0.1"
 
 /* Log levels */
 #define LL_DEBUG 0

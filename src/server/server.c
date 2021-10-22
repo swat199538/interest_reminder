@@ -179,6 +179,9 @@ static void acceptHandler(aeEventLoop *el, int fd, void *privdata, int mask)
         return;
     }
 
+    char *welcome = "welcome\n";
+    write(c->fd, welcome, strlen(welcome));
+
     server.stat_numconnections++;
 }
 

@@ -123,12 +123,13 @@ void aeStop(aeEventLoop *eventLoop){
 }
 
 int aeProcessEvents(aeEventLoop *eventLoop, int flags){
-    int processed = 0;
+    int processed = 0, numevents;
 
     if (!(flags & AE_TIME_EVENTS) && !(flags & AE_FILE_EVENTS)) return 0;
 
     if (eventLoop->maxFd != -1 ||
         ((flags & AE_TIME_EVENTS) && !(flags & AE_FILE_EVENTS))){
+        int j;
         aeTimeEvent *shortest = NULL;
         struct timeval tv, *tvp;
         if (flags & AE_TIME_EVENTS && !(flags & AE_DONT_WAIT))
@@ -154,6 +155,27 @@ int aeProcessEvents(aeEventLoop *eventLoop, int flags){
                 tvp = NULL;
             }
         }
+
+        numevents = aeApiPool(eventLoop, tvp);
+
+        for(j=0; j<numevents; j++){
+            aeFileEvent *fe = &eventLoop->events[eventLoop->fired[j].fd];
+            int mask = eventLoop->fired[j].mask;
+            int fd = eventLoop->fired[j].fd;
+            int refired = 0;
+
+            if (fe->mask & mask & AE_READABLE){
+                refired = 1;
+                fe->rFileProc(eventLoop, fd, fe->clientData, mask);
+            }
+
+            if (fe->mask & mask & AE_WRITEABLE){
+                if (!refired || fe->wFileProc != fe->rFileProc)
+                    fe->wFileProc(eventLoop, fd, fe->clientData, mask);
+            }
+            processed++;
+        }
+
     }
 
     if (flags & AE_TIME_EVENTS)
