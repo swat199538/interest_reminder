@@ -10,7 +10,7 @@
 #define AE_OK 0
 #define AE_ERR -1
 
-#define AE_NONE -1
+#define AE_NONE 0
 #define AE_READABLE  1
 #define AE_WRITEABLE 2
 
