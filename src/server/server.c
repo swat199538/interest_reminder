@@ -182,6 +182,11 @@ static void acceptHandler(aeEventLoop *el, int fd, void *privdata, int mask)
     server.stat_numconnections++;
 }
 
+static void beforeSleep(struct aeEventLoop *eventLoop){
+    IR_NOTUSED(eventLoop);
+    printf("before sleep event trigger\n");
+}
+
 void serverLogFromHandler(int level, const char *msg){
     int fd;
     int log_to_stdout = server.logfile[0] == '\0';
@@ -207,16 +212,13 @@ err:
 
 /*================================= Main ================================= */
 int main(int argc, char** argv){
-
     time_t start;
-
     initServerConfig();
-
     initServer();
-
     start = time(NULL);
-
+    aeSetBeforeSleepProc(server.el, beforeSleep);
+    aeMain(server.el);
+    aeDeleteEventLoop(server.el);
     printf("%d", start);
-
     return 0;
 }
