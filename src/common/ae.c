@@ -171,7 +171,7 @@ int aeProcessEvents(aeEventLoop *eventLoop, int flags){
 
             if (fe->mask & mask & AE_WRITEABLE){
                 if (!refired || fe->wFileProc != fe->rFileProc)
-                    fe->wFileProc(eventLoop, fd, fe->clientData, mask);
+                        fe->wFileProc(eventLoop, fd, fe->clientData, mask);
             }
             processed++;
         }

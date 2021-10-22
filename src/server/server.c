@@ -15,6 +15,8 @@
 #ifdef __linux__
 #include <sys/mman.h>
 #include <stdarg.h>
+#include <errno.h>
+
 #endif
 
 /* Anti-warning macro... */
@@ -28,8 +30,15 @@
 
 static void acceptHandler(aeEventLoop *el, int fd, void *privdata, int mask);
 
+static void readQueryFromClient(aeEventLoop *el, int fd, void *privdata, int mask);
+
 typedef struct iRClient{
     int fd;
+    char *querybuf;// char* convert sds?
+    int argc, mbargc;
+    int bulken;
+    time_t lastinteraction; /* time of the last interaction, used for timeout */
+    time_t blockingto;
 } iRClient;
 
 /*================================= Globals ================================= */
@@ -46,6 +55,15 @@ static int serverCron(struct aeEventLoop *eventLoop, long long id, void *clientD
     return 1000;
 }
 
+static void freeClient(iRClient *c)
+{
+    aeDeleteFileEvent(server.el, c->fd, AE_READABLE);
+    aeDeleteFileEvent(server.el, c->fd, AE_WRITEABLE);
+    close(c->fd);
+    zfree(c);
+}
+
+
 static iRClient *createClient(int fd)
 {
     iRClient *client = zmalloc(sizeof(struct iRClient));
@@ -54,17 +72,19 @@ static iRClient *createClient(int fd)
     anetNonDelay(NULL, fd);
     if (!client) return NULL;
     client->fd = fd;
+    client->querybuf = "";
+    client->argc = 0;
+    client->mbargc = 0;
+    client->lastinteraction = time(NULL);
 
+    if ((aeCreateFileEvent(server.el, client->fd, AE_READABLE,
+       readQueryFromClient, client)) == AE_ERR){
+        freeClient(client);
+        return NULL;
+    }
+
+    listAddNodeTail(server.client, client);
     return client;
-}
-
-static void freeClient(iRClient *c)
-{
-    aeDeleteFileEvent(server.el, c->fd, AE_READABLE);
-    aeDeleteFileEvent(server.el, c->fd, AE_WRITEABLE);
-    close(c->fd);
-
-    zfree(c);
 }
 
 static void iRLog(int level, const char *fmt, ...)
@@ -179,15 +199,41 @@ static void acceptHandler(aeEventLoop *el, int fd, void *privdata, int mask)
         return;
     }
 
-    char *welcome = "welcome\n";
-    write(c->fd, welcome, strlen(welcome));
-
     server.stat_numconnections++;
+}
+
+static void readQueryFromClient(aeEventLoop *el, int fd, void *privdata, int mask){
+    iRClient *c = (iRClient*) privdata;
+    char buf[REDIS_IOBUF_LEN];
+    int nread;
+    IR_NOTUSED(el);
+    IR_NOTUSED(mask);
+
+    nread = read(fd, buf, REDIS_IOBUF_LEN);
+    if (nread == -1){
+        if (errno == EAGAIN){
+            nread = 0;
+        } else{
+            iRLog(IR_VERBOSE, "Reading from client: %s", strerror(errno));
+            freeClient(c);
+            return;
+        }
+    } else if (nread == 0){
+        iRLog(IR_VERBOSE, "Client closed connect");
+        freeClient(c);
+        return;
+    }
+
+    if (nread){
+        c->querybuf = buf;
+        c->lastinteraction = time(NULL);
+    } else{
+        return;
+    }
 }
 
 static void beforeSleep(struct aeEventLoop *eventLoop){
     IR_NOTUSED(eventLoop);
-    printf("before sleep event trigger\n");
 }
 
 void serverLogFromHandler(int level, const char *msg){

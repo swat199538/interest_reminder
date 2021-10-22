@@ -40,15 +40,11 @@ static int aeApiAddEvent(aeEventLoop *eventLoop, int fd, int mask){
             EPOLL_CTL_ADD : EPOLL_CTL_MOD;
 
     ee.events = 0;
-
     mask |= eventLoop->events[fd].mask;
-
     if (mask & AE_READABLE) ee.events |= EPOLLIN; //epoll can read
     if (mask & AE_WRITEABLE) ee.events |= EPOLLOUT; //epoll can write
-
     ee.data.u64 = 0;
     ee.data.fd = fd;
-
     if (epoll_ctl(state->epfd, op, fd, &ee) == -1) return -1;
     return 0;
 }
