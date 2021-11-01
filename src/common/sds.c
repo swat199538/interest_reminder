@@ -62,3 +62,36 @@ size_t sdsavail(const sds s){
     struct sdshdr *sh = (struct sdshdr*)(s - sizeof(s));
     return sh->len;
 }
+
+static sds sdsMakeRoomFor(sds s, size_t addlen){
+    struct sdshdr *sh, *newsh;
+    size_t free = sdsavail(s);
+    size_t len, newlen;
+    if(free >= addlen) return s;
+    len = sdslen(s);
+    sh = (void *)s - sizeof(struct sdshdr);
+    newlen = (len+addlen)*2;
+    newsh = zrealloc(sh, sizeof(struct sdshdr)+newlen+1);
+#ifdef SDS_ABORT_ON_OOM
+    if (newsh == NULL) sdsOomAbort();
+#else
+    if(newsh == NULL) return NULL;
+#endif
+    newsh->free = newlen - len;
+    return newsh->buf;
+}
+
+sds sdscatlen(sds s, void *t, size_t len){
+    struct sdshdr *sh;
+    size_t culen = sdslen(s);
+
+    s = sdsMakeRoomFor(s, len);
+    if(s == NULL) return NULL;
+    sh = (struct sdshdr*)s - sizeof(struct sdshdr);
+    memcpy(s+culen, t, len);
+    sh->len = culen+len;
+    sh->free = sh->free - len;
+    //todo:test equal sh->buf[culen+len] = '\0';
+    s[culen+len] = '\0';
+    return s;
+}
