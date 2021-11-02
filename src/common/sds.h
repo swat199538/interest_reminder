@@ -23,5 +23,8 @@ sds sdsdup(const sds s);
 void sdsfree(sds s);
 size_t sdsavail(const sds s);
 sds sdscatlen(sds s, void *t, size_t len);
+sds sdscat(sds s, char *t);
+sds sdscpylen(sds s, char *t, size_t len);
+
 
 #endif //__SDS_H

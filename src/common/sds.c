@@ -95,3 +95,24 @@ sds sdscatlen(sds s, void *t, size_t len){
     s[culen+len] = '\0';
     return s;
 }
+
+sds sdscat(sds s, char *t){
+    return sdscatlen(s, t, strlen(t));
+}
+
+sds sdscpylen(sds s, char *t, size_t len){
+    struct sdshdr *sh = (void *)(s - sizeof(struct sdshdr));
+    size_t totlen = sh->len+sh->free;
+
+    if(totlen < len){
+        s = sdsMakeRoomFor(s, len-totlen);
+        if(s == NULL) return NULL;
+        sh = (void *)(s - sizeof(struct sdshdr));
+        totlen = sh->len+sh->free;
+    }
+    memcpy(s, t, len);
+    s[len] = '\0';
+    sh->len = len;
+    sh->free = totlen - len;
+    return s;
+}
