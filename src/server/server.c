@@ -29,18 +29,39 @@
 #define IR_NOTICE 2
 #define IR_WARNING 3
 
-static void acceptHandler(aeEventLoop *el, int fd, void *privdata, int mask);
+#define IR_ENCODING_RAW 0    /* Raw representation */
+#define IR_ENCODING_INT 1    /* Encoded as integer */
+#define IR_ENCODING_ZIPMAP 2 /* Encoded as zipmap */
+#define IR_ENCODING_HT 3     /* Encoded as an hash table */
 
-static void readQueryFromClient(aeEventLoop *el, int fd, void *privdata, int mask);
 
+typedef struct iRObject{
+    void *ptr;
+    unsigned char type;
+    unsigned char encoding;
+    unsigned char storage;
+    int refcount;
+} iobj;
 typedef struct iRClient{
     int fd;
     sds querybuf;// char* convert sds?
+
     int argc, mbargc;
     int bulken;
     time_t lastinteraction; /* time of the last interaction, used for timeout */
     time_t blockingto;
 } iRClient;
+typedef void iRCommandProc(iRClient *c);
+struct iRCommand{
+    char *name;
+    iRCommandProc *proc;
+    int arity;
+    int flags;
+};
+
+static void acceptHandler(aeEventLoop *el, int fd, void *privdata, int mask);
+static void readQueryFromClient(aeEventLoop *el, int fd, void *privdata, int mask);
+static iobj *createIobj(int type, void *ptr);
 
 /*================================= Globals ================================= */
 struct iRServer server;
@@ -203,6 +224,32 @@ static void acceptHandler(aeEventLoop *el, int fd, void *privdata, int mask)
     server.stat_numconnections++;
 }
 
+static void processInputBuff(iRClient *c){
+    char *p = strchr(c->querybuf, '\n');
+    size_t querylen;
+
+    if (p){
+        sds query, *argv;
+        int argc,j;
+
+        query = c->querybuf;
+        c->querybuf = sdsempty();
+        querylen = 1 + (p-query);
+        if (sdslen(query) > querylen){
+            c->querybuf = sdscatlen(c->querybuf, query+querylen, sdslen(query)-querylen);
+        }
+        *p = '\0';
+        if (*(p-1) == '\r') *(p-1) = '\0';
+        sdsupdatelen(query);
+        argv = sdssplitlen(query, sdslen(query), " ", 1, &argc);
+        sdsfree(query);
+    } else if (){
+
+    }
+
+
+}
+
 static void readQueryFromClient(aeEventLoop *el, int fd, void *privdata, int mask){
     iRClient *c = (iRClient*) privdata;
     char buf[IR_IOBUF_LEN];
@@ -231,6 +278,7 @@ static void readQueryFromClient(aeEventLoop *el, int fd, void *privdata, int mas
     } else{
         return;
     }
+    processInputBuff(c);
 }
 
 static void beforeSleep(struct aeEventLoop *eventLoop){
@@ -259,6 +307,10 @@ void serverLogFromHandler(int level, const char *msg){
 err:
     if (!log_to_stdout) close(fd);
 }
+
+static iobj *createIobj(int type, void *ptr){
+}
+
 
 /*================================= Main ================================= */
 int main(int argc, char** argv){

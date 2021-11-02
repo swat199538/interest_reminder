@@ -37,6 +37,7 @@ struct iRServer{
     int verbosity;
     int daemonize;  /* True if running as a daemon */
     aeEventLoop *el; //event loop
+    list *objfreelist;/* A list of freed objects to avoid malloc() */
     int fd;//socket fd
     char neterr[ANET_ERR_LEN];
     long long stat_numconnections;

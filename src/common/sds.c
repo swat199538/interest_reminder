@@ -116,3 +116,77 @@ sds sdscpylen(sds s, char *t, size_t len){
     sh->free = totlen - len;
     return s;
 }
+
+void sdsupdatelen(sds s){
+    struct sdshdr *sh = (void *)(s - sizeof(struct sdshdr));
+    int reallen = strlen(s);
+    sh->free += (sh->len-reallen);
+    sh->len = reallen;
+}
+
+sds *sdssplitlen(char *s, int len, char *sep, int seplen, int *count) {
+    int elements = 0, slots = 5, start = 0, j;
+
+    sds *tokens = zmalloc(sizeof(sds)*slots);
+#ifdef SDS_ABORT_ON_OOM
+    if (tokens == NULL) sdsOomAbort();
+#endif
+    if (seplen < 1 || len < 0 || tokens == NULL) return NULL;
+    if (len == 0) {
+        *count = 0;
+        return tokens;
+    }
+    for (j = 0; j < (len-(seplen-1)); j++) {
+        /* make sure there is room for the next element and the final one */
+        if (slots < elements+2) {
+            sds *newtokens;
+
+            slots *= 2;
+            newtokens = zrealloc(tokens,sizeof(sds)*slots);
+            if (newtokens == NULL) {
+#ifdef SDS_ABORT_ON_OOM
+                sdsOomAbort();
+#else
+                goto cleanup;
+#endif
+            }
+            tokens = newtokens;
+        }
+        /* search the separator */
+        if ((seplen == 1 && *(s+j) == sep[0]) || (memcmp(s+j,sep,seplen) == 0)) {
+            tokens[elements] = sdsnewlen(s+start,j-start);
+            if (tokens[elements] == NULL) {
+#ifdef SDS_ABORT_ON_OOM
+                sdsOomAbort();
+#else
+                goto cleanup;
+#endif
+            }
+            elements++;
+            start = j+seplen;
+            j = j+seplen-1; /* skip the separator */
+        }
+    }
+    /* Add the final element. We are sure there is room in the tokens array. */
+    tokens[elements] = sdsnewlen(s+start,len-start);
+    if (tokens[elements] == NULL) {
+#ifdef SDS_ABORT_ON_OOM
+        sdsOomAbort();
+#else
+        goto cleanup;
+#endif
+    }
+    elements++;
+    *count = elements;
+    return tokens;
+
+#ifndef SDS_ABORT_ON_OOM
+    cleanup:
+    {
+        int i;
+        for (i = 0; i < elements; i++) sdsfree(tokens[i]);
+        zfree(tokens);
+        return NULL;
+    }
+#endif
+}

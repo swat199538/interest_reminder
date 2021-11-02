@@ -25,6 +25,6 @@ size_t sdsavail(const sds s);
 sds sdscatlen(sds s, void *t, size_t len);
 sds sdscat(sds s, char *t);
 sds sdscpylen(sds s, char *t, size_t len);
-
-
+void sdsupdatelen(sds s);
+sds *sdssplitlen(char *s, int len, char *sep, int seplen, int *count);
 #endif //__SDS_H
