@@ -35,7 +35,7 @@ static void readQueryFromClient(aeEventLoop *el, int fd, void *privdata, int mas
 
 typedef struct iRClient{
     int fd;
-    char *querybuf;// char* convert sds?
+    sds querybuf;// char* convert sds?
     int argc, mbargc;
     int bulken;
     time_t lastinteraction; /* time of the last interaction, used for timeout */
@@ -73,7 +73,7 @@ static iRClient *createClient(int fd)
     anetNonDelay(NULL, fd);
     if (!client) return NULL;
     client->fd = fd;
-    client->querybuf = "";
+    client->querybuf = sdsempty();
     client->argc = 0;
     client->mbargc = 0;
     client->lastinteraction = time(NULL);
@@ -205,12 +205,12 @@ static void acceptHandler(aeEventLoop *el, int fd, void *privdata, int mask)
 
 static void readQueryFromClient(aeEventLoop *el, int fd, void *privdata, int mask){
     iRClient *c = (iRClient*) privdata;
-    char buf[REDIS_IOBUF_LEN];
+    char buf[IR_IOBUF_LEN];
     int nread;
     IR_NOTUSED(el);
     IR_NOTUSED(mask);
 
-    nread = read(fd, buf, REDIS_IOBUF_LEN);
+    nread = read(fd, buf, IR_IOBUF_LEN);
     if (nread == -1){
         if (errno == EAGAIN){
             nread = 0;
@@ -226,7 +226,7 @@ static void readQueryFromClient(aeEventLoop *el, int fd, void *privdata, int mas
     }
 
     if (nread){
-        c->querybuf = buf;
+        c->querybuf = sdscatlen(c->querybuf, buf, sizeof(buf));
         c->lastinteraction = time(NULL);
     } else{
         return;
