@@ -35,6 +35,19 @@
 #define IR_ENCODING_HT 3     /* Encoded as an hash table */
 #define IR_REQUEST_MAX_SIZE (1024*1024*256)
 
+typedef struct interestObject{
+    size_t tage;
+    sds name;
+    sds bank;
+    time_t depositDime;
+    time_t expirationDate;
+    size_t amount;
+    double rate;// interest rate
+    unsigned int payoutDay;//Dividend payout time
+    double grossInterest;
+    double interestPaid;
+    char finished;
+} inObj;
 typedef struct iRObject{
     void *ptr;
     unsigned char type;
