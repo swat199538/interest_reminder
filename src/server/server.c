@@ -33,7 +33,7 @@
 #define IR_ENCODING_INT 1    /* Encoded as integer */
 #define IR_ENCODING_ZIPMAP 2 /* Encoded as zipmap */
 #define IR_ENCODING_HT 3     /* Encoded as an hash table */
-
+#define IR_REQUEST_MAX_SIZE (1024*1024*256)
 
 typedef struct iRObject{
     void *ptr;
@@ -84,7 +84,6 @@ static void freeClient(iRClient *c)
     close(c->fd);
     zfree(c);
 }
-
 
 static iRClient *createClient(int fd)
 {
@@ -243,11 +242,16 @@ static void processInputBuff(iRClient *c){
         sdsupdatelen(query);
         argv = sdssplitlen(query, sdslen(query), " ", 1, &argc);
         sdsfree(query);
-    } else if (){
 
+        for (int i = 0; i < argc; ++i) {
+            iRLog(IR_VERBOSE, "cmd str:%s", argv[i]);
+        }
+
+    } else if (sdslen(c->querybuf) >= IR_REQUEST_MAX_SIZE){
+        iRLog(IR_VERBOSE, "client protocol err");
+        freeClient(c);
+        return;
     }
-
-
 }
 
 static void readQueryFromClient(aeEventLoop *el, int fd, void *privdata, int mask){

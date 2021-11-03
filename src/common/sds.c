@@ -55,7 +55,7 @@ sds sdsdup(const sds s){
 
 void sdsfree(sds s){
     if (s == NULL) return;
-    zfree(s - sizeof(s));
+    zfree(s - sizeof(struct sdshdr));
 }
 
 size_t sdsavail(const sds s){
