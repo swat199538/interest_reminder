@@ -6,13 +6,17 @@
 #define IREMINDER_SERVER_H
 
 #include <bits/types/sig_atomic_t.h>
+#include <stddef.h>
+#include <bits/types/time_t.h>
 #include "../common/ae.h"
 #include "../common/anet.h"
 #include "../common/adlist.h"
+#include "../common/sds.h"
 
 #define IR_SERVER_PORT 9538
 #define IR_SERVER_BIND_ADDR "127.0.0.1"
 #define IR_IOBUF_LEN 1024
+#define IR_PROJECT_LEN 1024
 
 /* Log levels */
 #define LL_DEBUG 0
@@ -21,6 +25,19 @@
 #define LL_WARNING 3
 #define LL_RAW (1<<10) /* Modifier to log without timestamp */
 
+typedef struct interestObject{
+    size_t tage;
+    sds name;
+    sds bank;
+    time_t depositDime;
+    time_t expirationDate;
+    size_t amount;
+    double rate;// interest rate
+    unsigned int payoutDay;//Dividend payout time
+    double grossInterest;
+    double interestPaid;
+    char finished;
+} inObj;
 
 extern struct iRServer server;
 
@@ -42,6 +59,8 @@ struct iRServer{
     char neterr[ANET_ERR_LEN];
     long long stat_numconnections;
     unsigned int maxClients;
+    inObj project[IR_PROJECT_LEN];
+    unsigned int projectCount;
 };
 
 void initServerConfig(void); // init server config

@@ -35,26 +35,6 @@
 #define IR_ENCODING_HT 3     /* Encoded as an hash table */
 #define IR_REQUEST_MAX_SIZE (1024*1024*256)
 
-typedef struct interestObject{
-    size_t tage;
-    sds name;
-    sds bank;
-    time_t depositDime;
-    time_t expirationDate;
-    size_t amount;
-    double rate;// interest rate
-    unsigned int payoutDay;//Dividend payout time
-    double grossInterest;
-    double interestPaid;
-    char finished;
-} inObj;
-typedef struct iRObject{
-    void *ptr;
-    unsigned char type;
-    unsigned char encoding;
-    unsigned char storage;
-    int refcount;
-} iobj;
 typedef struct iRClient{
     int fd;
     sds querybuf;// char* convert sds?
@@ -69,15 +49,20 @@ struct iRCommand{
     char *name;
     iRCommandProc *proc;
     int arity;
-    int flags;
 };
 
 static void acceptHandler(aeEventLoop *el, int fd, void *privdata, int mask);
 static void readQueryFromClient(aeEventLoop *el, int fd, void *privdata, int mask);
-static iobj *createIobj(int type, void *ptr);
+
+void addCommand(iRClient *c);
+void showCommand(iRClient *c);
 
 /*================================= Globals ================================= */
 struct iRServer server;
+static struct iRCommand cmdTab[] = {
+        {"add", addCommand, 9},
+        {"show", showCommand, 1},
+};
 /*============================ Utility functions ============================ */
 static int serverCron(struct aeEventLoop *eventLoop, long long id, void *clientData)
 {
@@ -185,6 +170,7 @@ void initServerConfig(){
     server.port = IR_SERVER_PORT;
     server.bindaddr = IR_SERVER_BIND_ADDR;
     server.maxClients = 5;
+    server.projectCount = 0;
 }
 
 void initServer()
@@ -256,9 +242,7 @@ static void processInputBuff(iRClient *c){
         argv = sdssplitlen(query, sdslen(query), " ", 1, &argc);
         sdsfree(query);
 
-        for (int i = 0; i < argc; ++i) {
-            iRLog(IR_VERBOSE, "cmd str:%s", argv[i]);
-        }
+
 
     } else if (sdslen(c->querybuf) >= IR_REQUEST_MAX_SIZE){
         iRLog(IR_VERBOSE, "client protocol err");
@@ -325,9 +309,11 @@ err:
     if (!log_to_stdout) close(fd);
 }
 
-static iobj *createIobj(int type, void *ptr){
-}
+/*================================= Command ================================= */
+void addCommand(iRClient *c){
 
+}
+/*================================= Command ================================= */
 
 /*================================= Main ================================= */
 int main(int argc, char** argv){
