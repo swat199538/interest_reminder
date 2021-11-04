@@ -26,16 +26,16 @@
 #define LL_RAW (1<<10) /* Modifier to log without timestamp */
 
 typedef struct interestObject{
-    size_t tage;
+    sds tage;
     sds name;
     sds bank;
-    time_t depositDime;
+    time_t depositDate;
     time_t expirationDate;
     size_t amount;
-    double rate;// interest rate
+    float rate;// interest rate
     unsigned int payoutDay;//Dividend payout time
-    double grossInterest;
-    double interestPaid;
+    float grossInterest;
+    float interestPaid;
     char finished;
 } inObj;
 
@@ -59,7 +59,7 @@ struct iRServer{
     char neterr[ANET_ERR_LEN];
     long long stat_numconnections;
     unsigned int maxClients;
-    inObj project[IR_PROJECT_LEN];
+    inObj **project;
     unsigned int projectCount;
 };
 

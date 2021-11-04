@@ -1,5 +1,7 @@
 // Created by wangl on 8/26/2021.
-
+#define __USE_XOPEN
+#define _XOPEN_SOURCE
+#include <time.h>
 #include "server.h"
 #include <unistd.h>
 #include "stddef.h"
@@ -17,7 +19,6 @@
 #include <stdarg.h>
 #include <errno.h>
 #include "../common/sds.h"
-
 #endif
 
 /* Anti-warning macro... */
@@ -38,11 +39,12 @@
 typedef struct iRClient{
     int fd;
     sds querybuf;// char* convert sds?
-
-    int argc, mbargc;
+    sds *argv;
+    int argc;
     int bulken;
     time_t lastinteraction; /* time of the last interaction, used for timeout */
     time_t blockingto;
+    list *reply;
 } iRClient;
 typedef void iRCommandProc(iRClient *c);
 struct iRCommand{
@@ -93,7 +95,7 @@ static iRClient *createClient(int fd)
     client->fd = fd;
     client->querybuf = sdsempty();
     client->argc = 0;
-    client->mbargc = 0;
+//    client->mbargc = 0;
     client->lastinteraction = time(NULL);
 
     if ((aeCreateFileEvent(server.el, client->fd, AE_READABLE,
@@ -310,8 +312,53 @@ err:
 }
 
 /*================================= Command ================================= */
+static void replyClientErr(inObj *o, const char *msg){
+    zfree(o);
+
+}
+
 void addCommand(iRClient *c){
 
+    inObj *obj;
+
+    obj = zmalloc(sizeof(inObj));
+
+    obj->tage = c->argv[1];
+    obj->name = c->argv[2];
+    obj->bank = c->argv[3];
+
+    struct tm dtm,etm;
+
+    if (strptime(c->argv[4], "%Y-%m-%d", &dtm) == NULL){
+        replyClientErr(obj, "deposit date err\n");
+        return;
+    }
+
+    obj->depositDate = mktime(&dtm);
+
+    if (strptime(c->argv[5], "%Y-%m-%d", &etm) == NULL){
+        replyClientErr(obj, "expiration date err\n");
+        return;
+    }
+    obj->expirationDate = mktime(&etm);
+
+    if (sscanf(c->argv[6], "%zu", &obj->amount) == 0){
+        replyClientErr(obj, "amount err\n");
+        return;
+    }
+
+    if (sscanf(c->argv[7], "%e", &obj->rate) == 0){
+        replyClientErr(obj, "rate err\n");
+        return;
+    }
+
+    if (sscanf(c->argv[8], "%d", &obj->payoutDay) == 0){
+        replyClientErr(obj, "play out day err\n");
+        return;
+    }
+
+    server.project[server.projectCount] = obj;
+    server.projectCount++;
 }
 /*================================= Command ================================= */
 
