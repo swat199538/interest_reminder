@@ -14,6 +14,7 @@
 #include "string.h"
 #include "stdio.h"
 #include "../common/zmalloc.h"
+#include <unistd.h>
 #ifdef __linux__
 #include <sys/mman.h>
 #include <stdarg.h>
@@ -35,6 +36,7 @@
 #define IR_ENCODING_ZIPMAP 2 /* Encoded as zipmap */
 #define IR_ENCODING_HT 3     /* Encoded as an hash table */
 #define IR_REQUEST_MAX_SIZE (1024*1024*256)
+#define IR_MAX_WRITE_PER_EVENT (1024*64)
 
 typedef struct iRClient{
     int fd;
@@ -45,6 +47,7 @@ typedef struct iRClient{
     time_t lastinteraction; /* time of the last interaction, used for timeout */
     time_t blockingto;
     list *reply;
+    int sentlen;
 } iRClient;
 typedef void iRCommandProc(iRClient *c);
 struct iRCommand{
@@ -55,9 +58,11 @@ struct iRCommand{
 
 static void acceptHandler(aeEventLoop *el, int fd, void *privdata, int mask);
 static void readQueryFromClient(aeEventLoop *el, int fd, void *privdata, int mask);
-
+static void sendReplyToClient(aeEventLoop *el, int fd, void *privdata, int mask);
+//static void sendReplyToClientWritev(aeEventLoop *el, int fd, void *privdata, int mask);
 void addCommand(iRClient *c);
 void showCommand(iRClient *c);
+void addReply(iRClient *c, sds msg);
 
 /*================================= Globals ================================= */
 struct iRServer server;
@@ -81,6 +86,7 @@ static void freeClient(iRClient *c)
 {
     aeDeleteFileEvent(server.el, c->fd, AE_READABLE);
     aeDeleteFileEvent(server.el, c->fd, AE_WRITEABLE);
+    listRelease(c->reply);
     close(c->fd);
     zfree(c);
 }
@@ -95,6 +101,8 @@ static iRClient *createClient(int fd)
     client->fd = fd;
     client->querybuf = sdsempty();
     client->argc = 0;
+    client->reply = listCreate();
+    client->sentlen = 0;
 //    client->mbargc = 0;
     client->lastinteraction = time(NULL);
 
@@ -244,6 +252,8 @@ static void processInputBuff(iRClient *c){
         argv = sdssplitlen(query, sdslen(query), " ", 1, &argc);
         sdsfree(query);
 
+        if (c->argv) zfree(c->argv);
+        c->argv = zmalloc(sizeof(sds*));
 
 
     } else if (sdslen(c->querybuf) >= IR_REQUEST_MAX_SIZE){
@@ -284,6 +294,52 @@ static void readQueryFromClient(aeEventLoop *el, int fd, void *privdata, int mas
     processInputBuff(c);
 }
 
+static void sendReplyToClient(aeEventLoop *el, int fd, void *privdata, int mask){
+    iRClient *c = privdata;
+    int nwritten=0, totwritten=0,objlen;
+    sds o;
+    IR_NOTUSED(el);
+    IR_NOTUSED(mask);
+
+    while (listLength(c->reply)){
+        o = listNodeValue(listFirst(c->reply));
+        objlen = sdslen(o);
+
+        if(objlen == 0){
+            listDelNode(c->reply, listFirst(c->reply));
+            continue;
+        }
+
+        nwritten = write(fd, o + c->sentlen, objlen - c->sentlen);
+        if (nwritten <= 0) break;
+
+        c->sentlen += nwritten;
+        totwritten += nwritten;
+
+        if (c->sentlen == objlen){
+            listDelNode(c->reply, listFirst(c->reply));
+            c->sentlen = 0;
+        }
+
+        if (totwritten > IR_MAX_WRITE_PER_EVENT) break;
+    }
+
+    if (nwritten <= -1){
+        if (errno == EAGAIN){
+            nwritten = 0;
+        } else{
+            iRLog(IR_VERBOSE, "Error writting to client: %s", strerror(errno));
+            freeClient(c);
+            return;
+        }
+    }
+    if (totwritten > 0) c->lastinteraction = time(NULL);
+    if (listLength(c->reply) == 0){
+        c->sentlen = 0;
+        aeDeleteFileEvent(server.el, c->fd, AE_WRITEABLE);
+    }
+}
+
 static void beforeSleep(struct aeEventLoop *eventLoop){
     IR_NOTUSED(eventLoop);
 }
@@ -311,10 +367,18 @@ err:
     if (!log_to_stdout) close(fd);
 }
 
-/*================================= Command ================================= */
-static void replyClientErr(inObj *o, const char *msg){
-    zfree(o);
+void addReply(iRClient *c, sds msg){
+    if (listLength(c->reply) == 0 &&
+        aeCreateFileEvent(server.el, c->fd,
+        AE_WRITEABLE, sendReplyToClient, c) == AE_ERR) return;
 
+    listAddNodeTail(c->reply, msg);
+}
+
+/*================================= Command ================================= */
+static void replyClientErr(iRClient *c, inObj *o, sds msg){
+    zfree(o);
+    addReply(c, msg);
 }
 
 void addCommand(iRClient *c){
@@ -330,30 +394,30 @@ void addCommand(iRClient *c){
     struct tm dtm,etm;
 
     if (strptime(c->argv[4], "%Y-%m-%d", &dtm) == NULL){
-        replyClientErr(obj, "deposit date err\n");
+        replyClientErr(c, obj, sdsnew("deposit date err\r\n"));
         return;
     }
 
     obj->depositDate = mktime(&dtm);
 
     if (strptime(c->argv[5], "%Y-%m-%d", &etm) == NULL){
-        replyClientErr(obj, "expiration date err\n");
+        replyClientErr(c, obj, sdsnew("expiration date err\r\n"));
         return;
     }
     obj->expirationDate = mktime(&etm);
 
     if (sscanf(c->argv[6], "%zu", &obj->amount) == 0){
-        replyClientErr(obj, "amount err\n");
+        replyClientErr(c, obj, sdsnew("amount err\r\n"));
         return;
     }
 
     if (sscanf(c->argv[7], "%e", &obj->rate) == 0){
-        replyClientErr(obj, "rate err\n");
+        replyClientErr(c, obj, sdsnew("rate err\r\n"));
         return;
     }
 
     if (sscanf(c->argv[8], "%d", &obj->payoutDay) == 0){
-        replyClientErr(obj, "play out day err\n");
+        replyClientErr(c, obj, sdsnew("play out day err\r\n"));
         return;
     }
 

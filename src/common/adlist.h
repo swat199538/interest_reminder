@@ -29,6 +29,8 @@ typedef struct list{
 } list;
 
 #define listLength(l) ((l)->len)
+#define listFirst(l) ((l)->head)
+#define listNodeValue(n) ((n)->value);
 
 list *listCreate(void);
 void listRelease(list *list);
