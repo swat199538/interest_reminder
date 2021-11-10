@@ -27,4 +27,12 @@ sds sdscat(sds s, char *t);
 sds sdscpylen(sds s, char *t, size_t len);
 void sdsupdatelen(sds s);
 sds *sdssplitlen(char *s, int len, char *sep, int seplen, int *count);
+
+#ifdef __GNUC__
+sds sdscatprintf(sds s, const char *fmt, ...);
+    __attribute__((format(printf, 2, 3)));
+#else
+sds sdscatprintf(sds s, const char *fmt, ...);
+#endif
+
 #endif //__SDS_H

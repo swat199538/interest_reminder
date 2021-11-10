@@ -11,7 +11,6 @@
 #include "stdlib.h"
 #include "fcntl.h"
 #include "../common/util.h"
-#include "string.h"
 #include "stdio.h"
 #include "../common/zmalloc.h"
 #include <unistd.h>
@@ -19,6 +18,8 @@
 #include <sys/mman.h>
 #include <stdarg.h>
 #include <errno.h>
+#include <string.h>
+#include <strings.h>
 #include "../common/sds.h"
 #endif
 
@@ -63,6 +64,8 @@ static void sendReplyToClient(aeEventLoop *el, int fd, void *privdata, int mask)
 void addCommand(iRClient *c);
 void showCommand(iRClient *c);
 void addReply(iRClient *c, sds msg);
+int processCommand(iRClient *c);
+static struct iRCommand* lookupCommand(char *name);
 
 /*================================= Globals ================================= */
 struct iRServer server;
@@ -233,7 +236,9 @@ static void acceptHandler(aeEventLoop *el, int fd, void *privdata, int mask)
 }
 
 static void processInputBuff(iRClient *c){
-    char *p = strchr(c->querybuf, '\n');
+    char *p;
+again:
+    p = strchr(c->querybuf, '\n');
     size_t querylen;
 
     if (p){
@@ -253,9 +258,23 @@ static void processInputBuff(iRClient *c){
         sdsfree(query);
 
         if (c->argv) zfree(c->argv);
-        c->argv = zmalloc(sizeof(sds*));
+        c->argv = zmalloc(sizeof(sds)*argc);
 
+        for (j = 0; j < argc; j++) {
+            if (sdslen(argv[j])){
+                c->argv[j] = argv[j];
+                c->argc++;
+            } else{
+                sdsfree(argv[j]);
+            }
+        }
+        zfree(argv);
+        if (c->argc){
 
+        } else{
+            if (sdslen(c->querybuf)) goto again;
+        }
+        return;
     } else if (sdslen(c->querybuf) >= IR_REQUEST_MAX_SIZE){
         iRLog(IR_VERBOSE, "client protocol err");
         freeClient(c);
@@ -373,6 +392,35 @@ void addReply(iRClient *c, sds msg){
         AE_WRITEABLE, sendReplyToClient, c) == AE_ERR) return;
 
     listAddNodeTail(c->reply, msg);
+}
+
+int processCommand(iRClient *c){
+    struct iRCommand *cmd;
+
+    if (!strcasecmp(c->argv[0], "quit")){
+        freeClient(c);
+        return 0;
+    }
+
+    cmd = lookupCommand(c->argv[0]);
+
+    if (!cmd){
+        addReply(c,
+                 sdscatprintf(sdsempty(), "-ERR unknown command '%s'\r\n",
+                              c->argv[0]));
+        return 1;
+    }
+
+
+}
+
+static struct iRCommand* lookupCommand(char *name){
+    int j = 0;
+    while (cmdTab[j].name != NULL){
+        if (!strcasecmp(name, cmdTab[j].name)) return &cmdTab[j];
+        j++;
+    }
+    return NULL;
 }
 
 /*================================= Command ================================= */
