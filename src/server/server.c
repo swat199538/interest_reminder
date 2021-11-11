@@ -38,6 +38,7 @@
 #define IR_ENCODING_HT 3     /* Encoded as an hash table */
 #define IR_REQUEST_MAX_SIZE (1024*1024*256)
 #define IR_MAX_WRITE_PER_EVENT (1024*64)
+#define IR_MAX_PROJECT_COUNT 1024
 
 typedef struct iRClient{
     int fd;
@@ -194,6 +195,7 @@ void initServer()
     server.thread_id = pthread_self();
     server.el = aeCreateEventLoop();
     server.client = listCreate();
+    server.project = zmalloc(sizeof(inObj)* IR_MAX_PROJECT_COUNT);
     server.fd = anetTcpServer(server.neterr, server.port, server.bindaddr);
     if (server.fd == -1){
         iRLog(IR_WARNING, "Opening TCP port: %s", server.neterr);
@@ -452,13 +454,18 @@ static void replyClientErr(iRClient *c, inObj *o, sds msg){
 
 void addCommand(iRClient *c){
 
+    if (server.projectCount >= IR_MAX_PROJECT_COUNT){
+        addReply(c, "add error beyond max number\n");
+        return;
+    }
+
     inObj *obj;
 
     obj = zmalloc(sizeof(inObj));
 
-    obj->tage = c->argv[1];
-    obj->name = c->argv[2];
-    obj->bank = c->argv[3];
+    obj->tage = sdscat(sdsempty(), c->argv[1]);
+    obj->name = sdscat(sdsempty(), c->argv[2]);
+    obj->bank = sdscat(sdsempty(), c->argv[3]);
 
     struct tm dtm,etm;
 
