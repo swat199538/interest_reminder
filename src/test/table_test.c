@@ -135,7 +135,7 @@ int main(int argc, char **argv){
     addfd_to_epoll(epoll_fd, socket_fd, 1, FD_NONBLOCK);
 
     while (1){
-        number = epoll_wait(epoll_fd, events, 5, 2);
+        number = epoll_wait(epoll_fd, events, 5, 10);
 
         if (number == 0){
             printf("no ready event\n");

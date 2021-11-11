@@ -190,8 +190,9 @@ int aeCreateFileEvent(aeEventLoop *eventLoop, int fd, int mask,
     if (fd >= AE_SETSIZE) return AE_ERR;
     aeFileEvent *fe = &eventLoop->events[fd];
 
-    if (aeApiAddEvent(eventLoop, fd, mask) != 0)
+    if (aeApiAddEvent(eventLoop, fd, mask) != 0){
         return AE_ERR;
+    }
 
     fe->mask |= mask;
     if (mask & AE_READABLE) fe->rFileProc = proc;

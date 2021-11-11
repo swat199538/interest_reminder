@@ -66,6 +66,8 @@ void showCommand(iRClient *c);
 void addReply(iRClient *c, sds msg);
 int processCommand(iRClient *c);
 static struct iRCommand* lookupCommand(char *name);
+static void resetClient(iRClient *c);
+static void call(iRClient *c, struct iRCommand *cmd);
 
 /*================================= Globals ================================= */
 struct iRServer server;
@@ -270,7 +272,7 @@ again:
         }
         zfree(argv);
         if (c->argc){
-
+            if (processCommand(c) && sdslen(c->querybuf)) goto again;
         } else{
             if (sdslen(c->querybuf)) goto again;
         }
@@ -405,13 +407,32 @@ int processCommand(iRClient *c){
     cmd = lookupCommand(c->argv[0]);
 
     if (!cmd){
-        addReply(c,
-                 sdscatprintf(sdsempty(), "-ERR unknown command '%s'\r\n",
-                              c->argv[0]));
+        addReply(c,sdscatprintf(sdsempty(), "-ERR unknown command '%s'\r\n",
+                          c->argv[0]));
+        resetClient(c);
+        return 1;
+    } else if (cmd->arity > 0 && cmd->arity != c->argc || c->argc < -cmd->arity){
+        addReply(c, sdscatprintf(sdsempty(), "-ERR wrong number of arguments for '%s' command\r\n",
+                           cmd->name));
+        resetClient(c);
         return 1;
     }
 
+    call(c, cmd);
+    resetClient(c);
+    return 1;
+}
 
+static void resetClient(iRClient *c){
+    int j;
+    for(j=0; j < c->argc; j++){
+        sdsfree(c->argv[j]);
+    }
+    c->argc = 0;
+}
+
+static void call(iRClient *c, struct iRCommand *cmd){
+    cmd->proc(c);
 }
 
 static struct iRCommand* lookupCommand(char *name){
@@ -471,6 +492,10 @@ void addCommand(iRClient *c){
 
     server.project[server.projectCount] = obj;
     server.projectCount++;
+}
+
+void showCommand(iRClient *c){
+    addReply(c, sdscat(sdsempty(), "show command exec\n"));
 }
 /*================================= Command ================================= */
 

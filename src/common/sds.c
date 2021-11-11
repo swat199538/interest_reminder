@@ -88,11 +88,10 @@ sds sdscatlen(sds s, void *t, size_t len){
 
     s = sdsMakeRoomFor(s, len);
     if(s == NULL) return NULL;
-    sh = (struct sdshdr*)s - sizeof(struct sdshdr);
+    sh = (void*) (s-(sizeof(struct sdshdr)));
     memcpy(s+culen, t, len);
     sh->len = culen+len;
     sh->free = sh->free - len;
-    //todo:test equal sh->buf[culen+len] = '\0';
     s[culen+len] = '\0';
     return s;
 }
