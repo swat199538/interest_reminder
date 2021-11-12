@@ -26,7 +26,7 @@
 #define LL_RAW (1<<10) /* Modifier to log without timestamp */
 
 typedef struct interestObject{
-    sds tage;
+    sds tag;
     sds name;
     sds bank;
     time_t depositDate;

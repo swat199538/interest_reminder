@@ -13,6 +13,7 @@
 #include "../common/util.h"
 #include "stdio.h"
 #include "../common/zmalloc.h"
+#include "../common/fort.h"
 #include <unistd.h>
 #ifdef __linux__
 #include <sys/mman.h>
@@ -62,8 +63,9 @@ static void acceptHandler(aeEventLoop *el, int fd, void *privdata, int mask);
 static void readQueryFromClient(aeEventLoop *el, int fd, void *privdata, int mask);
 static void sendReplyToClient(aeEventLoop *el, int fd, void *privdata, int mask);
 //static void sendReplyToClientWritev(aeEventLoop *el, int fd, void *privdata, int mask);
-void addCommand(iRClient *c);
-void showCommand(iRClient *c);
+static void addCommand(iRClient *c);
+static void showCommand(iRClient *c);
+static void showConsoleCommand(iRClient *c);
 void addReply(iRClient *c, sds msg);
 int processCommand(iRClient *c);
 static struct iRCommand* lookupCommand(char *name);
@@ -73,21 +75,11 @@ static void call(iRClient *c, struct iRCommand *cmd);
 /*================================= Globals ================================= */
 struct iRServer server;
 static struct iRCommand cmdTab[] = {
-        {"add", addCommand, 9},
-        {"show", showCommand, 1},
+        {"add",   addCommand,         9},
+        {"show",  showCommand,        1},
+        {"showc", showConsoleCommand, 1},
 };
 /*============================ Utility functions ============================ */
-static int serverCron(struct aeEventLoop *eventLoop, long long id, void *clientData)
-{
-    IR_NOTUSED(eventLoop);
-    IR_NOTUSED(id);
-    IR_NOTUSED(clientData);
-
-    printf("server cron launch...\n");
-
-    return 1000;
-}
-
 static void freeClient(iRClient *c)
 {
     aeDeleteFileEvent(server.el, c->fd, AE_READABLE);
@@ -107,6 +99,7 @@ static iRClient *createClient(int fd)
     client->fd = fd;
     client->querybuf = sdsempty();
     client->argc = 0;
+    client->argv = NULL;
     client->reply = listCreate();
     client->sentlen = 0;
 //    client->mbargc = 0;
@@ -180,6 +173,34 @@ static void sigShutdownHandler(int sig){
 
     serverLogFromHandler(LL_WARNING, msg);
     server.shutdown_asap = 1;
+}
+
+static int serverCron(struct aeEventLoop *eventLoop, long long id, void *clientData)
+{
+    IR_NOTUSED(eventLoop);
+    IR_NOTUSED(id);
+    IR_NOTUSED(clientData);
+
+    if (server.projectCount > 0){
+        ft_table_t *table = ft_create_table();
+        ft_set_cell_prop(table, 0, FT_ANY_COLUMN, FT_CPROP_ROW_TYPE, FT_ANY_ROW);
+        ft_write_ln(table, "tag", "name", "bank", "amount", "rate");
+        int j;
+        for (j=0; j < server.projectCount; j++){
+            char amountStr[256], rateStr[256];
+            memset(amountStr, 0, 256);
+            memset(rateStr, 0, 256);
+            snprintf(amountStr, sizeof(amountStr), "%zu", server.project[j]->amount);
+            snprintf(rateStr, sizeof(rateStr), "%f", server.project[j]->rate);
+            ft_write_ln(table, server.project[j]->tag, server.project[j]->name, server.project[j]->bank,
+                        amountStr, rateStr);
+        }
+        fprintf(stdout, "%s", ft_to_string(table));
+        fflush(stdout);
+        ft_destroy_table(table);
+    }
+
+    return 10000;
 }
 
 void initServerConfig(){
@@ -309,7 +330,7 @@ static void readQueryFromClient(aeEventLoop *el, int fd, void *privdata, int mas
     }
 
     if (nread){
-        c->querybuf = sdscatlen(c->querybuf, buf, sizeof(buf));
+        c->querybuf = sdscatlen(c->querybuf, buf, nread);
         c->lastinteraction = time(NULL);
     } else{
         return;
@@ -452,7 +473,7 @@ static void replyClientErr(iRClient *c, inObj *o, sds msg){
     addReply(c, msg);
 }
 
-void addCommand(iRClient *c){
+static void addCommand(iRClient *c){
 
     if (server.projectCount >= IR_MAX_PROJECT_COUNT){
         addReply(c, "add error beyond max number\n");
@@ -463,7 +484,7 @@ void addCommand(iRClient *c){
 
     obj = zmalloc(sizeof(inObj));
 
-    obj->tage = sdscat(sdsempty(), c->argv[1]);
+    obj->tag = sdscat(sdsempty(), c->argv[1]);
     obj->name = sdscat(sdsempty(), c->argv[2]);
     obj->bank = sdscat(sdsempty(), c->argv[3]);
 
@@ -501,9 +522,31 @@ void addCommand(iRClient *c){
     server.projectCount++;
 }
 
-void showCommand(iRClient *c){
+static void showCommand(iRClient *c){
     addReply(c, sdscat(sdsempty(), "show command exec\n"));
 }
+
+static void showConsoleCommand(iRClient *c){
+    ft_table_t *table = ft_create_table();
+    ft_set_cell_prop(table, 0, FT_ANY_COLUMN, FT_CPROP_ROW_TYPE, FT_ANY_ROW);
+    ft_write_ln(table, "tag", "name", "bank", "amount", "rate");
+    int j;
+    for (j=0; j < server.projectCount; j++){
+        char amountStr[256], rateStr[256];
+        memset(amountStr, 0, 256);
+        memset(rateStr, 0, 256);
+        snprintf(amountStr, sizeof(amountStr), "%zu", server.project[j]->amount);
+        snprintf(rateStr, sizeof(rateStr), "%f", server.project[j]->rate);
+        ft_write_ln(table, server.project[j]->tag, server.project[j]->name, server.project[j]->bank,
+                    amountStr, rateStr);
+    }
+    addReply(c, sdscatprintf(sdsempty(), "%s", ft_to_string(table)));
+    fprintf(stdout, "%s", ft_to_string(table));
+    fflush(stdout);
+    ft_destroy_table(table);
+}
+
+
 /*================================= Command ================================= */
 
 /*================================= Main ================================= */
