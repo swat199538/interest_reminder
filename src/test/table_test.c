@@ -11,6 +11,7 @@
 #include <errno.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#include <time.h>
 
 #define MAX_BUFF_SIZE 1024
 #define FD_NONBLOCK 1
@@ -123,30 +124,39 @@ int create_socket(const char *ip, const int port_number){
 
 int main(int argc, char **argv){
 
-    int socket_fd, epoll_fd, number;
+//    int socket_fd, epoll_fd, number;
+//
+//    socket_fd = create_socket("127.0.0.1", atoi("5050"));
+//
+//    struct epoll_event events[20];
+//
+//    if ((epoll_fd = epoll_create1(0)) == -1)
+//        err_exit("epoll creat fail\n");
+//
+//    addfd_to_epoll(epoll_fd, socket_fd, 1, FD_NONBLOCK);
+//
+//    while (1){
+//        number = epoll_wait(epoll_fd, events, 5, 10);
+//
+//        if (number == 0){
+//            printf("no ready event\n");
+//        }else if (number == -1)
+//            err_exit("epoll wait fail");
+//        else{
+//            epoll_process(epoll_fd, events, number, socket_fd, 0, FD_NONBLOCK);
+//        }
+//    }
+//
+//    close(socket_fd);
+//    return 0;
 
-    socket_fd = create_socket("127.0.0.1", atoi("5050"));
+    time_t t = time(NULL);
+    struct tm *tmt = localtime(&t);
+    tmt->tm_hour = 0;
+    tmt->tm_sec = 0;
+    tmt->tm_min = 0;
+    t = mktime(tmt);
 
-    struct epoll_event events[20];
-
-    if ((epoll_fd = epoll_create1(0)) == -1)
-        err_exit("epoll creat fail\n");
-
-    addfd_to_epoll(epoll_fd, socket_fd, 1, FD_NONBLOCK);
-
-    while (1){
-        number = epoll_wait(epoll_fd, events, 5, 10);
-
-        if (number == 0){
-            printf("no ready event\n");
-        }else if (number == -1)
-            err_exit("epoll wait fail");
-        else{
-            epoll_process(epoll_fd, events, number, socket_fd, 0, FD_NONBLOCK);
-        }
-    }
-
-    close(socket_fd);
-    return 0;
+    printf("%zu", t);
 }
 

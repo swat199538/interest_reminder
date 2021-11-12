@@ -489,6 +489,8 @@ static void addCommand(iRClient *c){
     obj->bank = sdscat(sdsempty(), c->argv[3]);
 
     struct tm dtm,etm;
+    memset(&dtm, 0, sizeof(dtm));
+    memset(&etm, 0, sizeof(etm));
 
     if (strptime(c->argv[4], "%Y-%m-%d", &dtm) == NULL){
         replyClientErr(c, obj, sdsnew("deposit date err\r\n"));
@@ -522,8 +524,94 @@ static void addCommand(iRClient *c){
     server.projectCount++;
 }
 
+static time_t refineDate(time_t t){
+    struct tm *tmt = localtime(&t);
+    tmt->tm_hour = 0;
+    tmt->tm_min = 0;
+    tmt->tm_sec = 0;
+
+    time_t value = mktime(tmt);
+    return value;
+}
+
+static float calculateGrossInterest(inObj *obj, float *rest, float *play){
+
+    float total = 0;
+    float played = 0;
+
+    size_t s = 60 * 60 * 24 * obj->payoutDay;
+    time_t pt = obj->depositDate + s;
+    time_t today = time(NULL);
+
+    while (refineDate(pt) < refineDate(obj->expirationDate)){
+        total += obj->amount * obj->rate;
+        if (refineDate(pt) <= refineDate(today)){
+            played +=  obj->amount * obj->rate;
+        }
+        time_t tmp = pt +s;
+        if (refineDate(pt + s) >= refineDate(obj->expirationDate)){
+            break;
+        }
+        pt+=s;
+    }
+
+    if (refineDate(obj->expirationDate) > refineDate(pt)){
+        int day =( refineDate(obj->expirationDate) - refineDate(pt))/(24*3600);
+        total += (obj->amount * obj->rate) / obj->payoutDay * day;
+    }
+
+    *play = played;
+    *rest = total - played;
+
+    return total;
+}
+
+static void st_to_str(size_t t, char *t_str, int len){
+    memset(t_str, 0, 256);
+    snprintf(t_str, len, "%zu", t);
+}
+
+static void f_to_str(float f, char *t_str, int len){
+    memset(t_str, 0, len);
+    snprintf(t_str, len, "%f", f);
+}
+
+static void t_to_str(time_t t, char *t_str, int len){
+    memset(t_str, 0, len);
+    struct tm *tmp = localtime(&t);
+    strftime(t_str, len, "%Y-%m-%d", tmp);
+}
+
+
 static void showCommand(iRClient *c){
-    addReply(c, sdscat(sdsempty(), "show command exec\n"));
+    ft_table_t *table = ft_create_table();
+
+    ft_set_cell_prop(table, 0, FT_ANY_COLUMN, FT_CPROP_ROW_TYPE, FT_ANY_ROW);
+    ft_write_ln(table, "tag", "name", "bank", "amount", "rate", "deposit time", "expiration time",
+                "payout cycle(day)", "total");
+
+    //, "gross interest", "interest earned", "the residual interest",
+    //                "next pay date"
+
+    int j;
+    for (j = 0; j < server.projectCount; ++j) {
+        inObj *o = server.project[j];
+
+        float rest, total, play;
+        total = calculateGrossInterest(o, &rest, &play);
+
+        char dd[80], ed[80], podStr[255], amountStr[80], rateStr[80], totalStr[255];
+        t_to_str(o->depositDate, dd, 80);
+        t_to_str(o->expirationDate, ed, 80);
+        st_to_str(o->amount, amountStr, 80);
+        f_to_str(o->rate, rateStr, 80);
+        st_to_str(o->payoutDay, podStr, 255);
+        f_to_str(total, totalStr, 255);
+
+        ft_write_ln(table, o->tag, o->name, o->bank, amountStr, rateStr, dd, ed, podStr, totalStr);
+    }
+    addReply(c, sdscatprintf(sdsempty(), "%s", ft_to_string(table)));
+    ft_destroy_table(table);
 }
 
 static void showConsoleCommand(iRClient *c){
