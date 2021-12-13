@@ -16,6 +16,11 @@
 #define MAX_BUFF_SIZE 1024
 #define FD_NONBLOCK 1
 
+static struct config{
+    int a;
+    char *b;
+} config;
+
 static int set_nonblock(int fd){
     int old_flg = fcntl(fd, F_GETFL);
     fcntl(fd, F_SETFL, old_flg | O_NONBLOCK);
@@ -122,6 +127,11 @@ int create_socket(const char *ip, const int port_number){
     return socktfd;
 }
 
+static void m_print(){
+    printf("%d\n", config.a);
+    printf("%s\n", config.b);
+}
+
 int main(int argc, char **argv){
 
 //    int socket_fd, epoll_fd, number;
@@ -150,13 +160,6 @@ int main(int argc, char **argv){
 //    close(socket_fd);
 //    return 0;
 
-    time_t t = time(NULL);
-    struct tm *tmt = localtime(&t);
-    tmt->tm_hour = 0;
-    tmt->tm_sec = 0;
-    tmt->tm_min = 0;
-    t = mktime(tmt);
 
-    printf("%zu", t);
 }
 
