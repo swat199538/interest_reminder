@@ -2,4 +2,6 @@ cmake_minimum_required(VERSION 2.8)
 
 PROJECT(IReminderClient)
 
-add_executable(erro client.c ../common/cJSON.c)
+set(__USE_MISC)
+
+add_executable(ir_cli client.c ../common/anet.c ../common/zmalloc.c)

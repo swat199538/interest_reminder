@@ -11,6 +11,7 @@
 #include <unistd.h>
 #include <arpa/inet.h>
 #include <fcntl.h>
+#include <netdb.h>
 
 static void anetSetError(char *err, const char *fmt, ...)
 {
@@ -114,5 +115,24 @@ int anetNonDelay(char *err, int fd)
         return ANET_ERR;
     }
 
+    return ANET_OK;
+}
+
+int anetResolve(char *err, char *host, char *ipbuf)
+{
+    struct sockaddr_in sa;
+
+    sa.sin_family = AF_INET;
+    if(inet_aton(host, &sa.sin_addr) == 0){
+        struct hostent *he;
+
+        he = gethostbyname(host);
+        if(he == NULL){
+            anetSetError(err, "can't resolve %s", host);
+            return ANET_ERR;
+        }
+        memcpy(&sa.sin_addr, he->h_addr_list[0], sizeof(he));
+    }
+    strcpy(ipbuf, inet_ntoa(sa.sin_addr));
     return ANET_OK;
 }

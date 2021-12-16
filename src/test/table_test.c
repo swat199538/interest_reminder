@@ -160,6 +160,17 @@ int main(int argc, char **argv){
 //    close(socket_fd);
 //    return 0;
 
+    char **ap, *args[2048];
 
+    args[0] = "abcdefg";
+    args[1] = "higklmn";
+
+    ap = args;
+
+    char *s = *ap;
+    char d = **ap;
+
+    printf("%s\n", s);
+    printf("%c\n", d);
 }
 
