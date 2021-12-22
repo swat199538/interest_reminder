@@ -1,9 +1,15 @@
 #include "../common/fmacros.h"
+
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
+
 #include "../common/zmalloc.h"
 #include "../common/anet.h"
+#include "../common/sds.h"
+
+#define IR_CMD_INLINE 1
+#define IR_CMD_BULK 2
 
 
 static struct config{
@@ -20,12 +26,56 @@ struct redisCommand{
     int flags;
 };
 
+struct redisCommand cmdTable[] = {
+    {"show", 1, IR_CMD_INLINE},
+    {NULL, 0, IR_CMD_INLINE}
+};
+
 static void usage(){
     printf("usage ir_cli -h[]\n");
     exit(1);
 }
 
+static struct redisCommand *lookupCommand(const char *name){
+    int j = 0;
+
+    while (cmdTable[j].name != NULL){
+        if(!strcasecmp(cmdTable[j].name, name)) return &cmdTable[j];
+        j++;
+    }
+
+    return NULL;
+}
+
+static int cliConnect(void){
+    char err[ANET_ERR_LEN];
+    static int fd = ANET_ERR_LEN;
+
+    if(fd == ANET_ERR){
+        fd =
+    }
+
+}
+
 static int cliSendCommand(int argc, char **argv){
+    struct redisCommand *rc = lookupCommand(argv[0]);
+    int fd, j, retval = 0;
+    int read_forever = 0;
+    sds cmd;
+
+    if(!rc){
+        fprintf(stderr, "Unknown command %s", argv[0]);
+        return 1;
+    }
+
+    if( (rc->arity > 0 && argc != rc->arity) ||
+        (rc->arity < 0 && argc < -rc->arity) ){
+        fprintf(stderr, "Wrong number of  argumensts  for %s\n", rc->name);
+        return 1;
+    }
+
+
+
 
 };
 
@@ -88,6 +138,7 @@ static void repl(){
         }
 
         config.repeat = 1;
+        cliSendCommand(argc, args);
         line = buffer;
     }
 

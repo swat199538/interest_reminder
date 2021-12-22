@@ -23,6 +23,57 @@ static void anetSetError(char *err, const char *fmt, ...)
     va_end(ap);
 }
 
+#define ANET_CONNECT_NONE 0
+#define ANET_CONNECT_NONBLOCK 1
+static int anetTcpGenericConnect(char *err, char *addr, int port, int flags)
+{
+    int s, on = 1;
+    struct sockaddr_in sa;
+
+    if((s = socket(AF_INET, SOCK_STREAM, 0)) == -1){
+        anetSetError(err, "%s", strerror(errno));
+        return ANET_ERR;
+    }
+
+    setsockopt(s, SOL_SOCKET, SO_REUSEADDR, &on, sizeof(on));
+
+    sa.sin_family = AF_INET;
+    sa.sin_port = htons(port);
+
+    if(inet_aton(addr, &sa.sin_addr) == 0){
+        struct hostent *he;
+
+        he = gethostbyname(addr);
+        if(he == NULL){
+            anetSetError(err, "can't resolve %s \n", addr);
+            close(s);
+            return ANET_ERR;
+        }
+        memcpy(&sa.sin_addr, he->h_addr_list[0], sizeof(struct in_addr));
+    }
+
+    if(flags & ANET_CONNECT_NONBLOCK){
+        if(anetNonBlock(err, s) != ANET_OK)
+            return ANET_ERR;
+    }
+
+    if(connect(s, (struct sockaddr*)&sa, sizeof(sa)) == -1){
+        if(errno == EINPROGRESS &&
+        flags & ANET_CONNECT_NONBLOCK)
+            return s;
+
+        anetSetError(err, "connect: %s", strerror(errno));
+        close(s);
+        return ANET_ERR;
+    }
+    return s;
+}
+
+int anetTcpConnect(char *err, int port, char *addr)
+{
+    return anetTcpGenericConnect(err, addr, port, ANET_CONNECT_NONE);
+}
+
 int anetTcpServer(char *err, int port, char *addr)
 {
     int s, on = 1;
