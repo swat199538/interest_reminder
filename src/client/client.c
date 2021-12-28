@@ -52,7 +52,11 @@ static int cliConnect(void){
     static int fd = ANET_ERR_LEN;
 
     if(fd == ANET_ERR){
-        fd =
+        fd = anetTcpConnect(err, config.host_ip, config.host_port);
+        if(fd == ANET_ERR){
+            fprintf()
+        }
+
     }
 
 }

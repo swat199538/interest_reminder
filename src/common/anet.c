@@ -69,7 +69,7 @@ static int anetTcpGenericConnect(char *err, char *addr, int port, int flags)
     return s;
 }
 
-int anetTcpConnect(char *err, int port, char *addr)
+int anetTcpConnect(char *err, char *addr, int port)
 {
     return anetTcpGenericConnect(err, addr, port, ANET_CONNECT_NONE);
 }
@@ -150,7 +150,7 @@ int anetNonBlock(char *err, int fd)
         return ANET_ERR;
     }
     if (fcntl(fd, F_SETFL, flags | O_NONBLOCK) == -1){
-        anetSetError(err, "fcntl(F_SETFL):%s\n", strerror(errno));
+        anetSetError(err, "fcntl(F_SETFL, O_NONBLOCK):%s\n", strerror(errno));
         return ANET_ERR;
     }
 
