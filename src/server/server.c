@@ -16,12 +16,10 @@
 #include "../common/fort.h"
 #include <unistd.h>
 #ifdef __linux__
-#include <sys/mman.h>
 #include <stdarg.h>
 #include <errno.h>
 #include <string.h>
 #include <strings.h>
-#include "../common/sds.h"
 #endif
 
 /* Anti-warning macro... */

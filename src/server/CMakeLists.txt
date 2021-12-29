@@ -2,7 +2,13 @@ cmake_minimum_required(VERSION 2.8)
 
 PROJECT(IReminderServer)
 
-set(IR_SERVER_LIST ../common/adlist.c ../common/ae.c ../common/anet.c server.c ../common/zmalloc.c ../common/util.c ../common/sds.c ../common/fort.c)
+add_executable(IReminderServer server.c)
 
-add_executable(IReminderServer ${IR_SERVER_LIST})
+target_link_libraries(IReminderServer zmalloc)
+target_link_libraries(IReminderServer adlist)
+target_link_libraries(IReminderServer ae)
+target_link_libraries(IReminderServer anet)
+target_link_libraries(IReminderServer util)
+target_link_libraries(IReminderServer sds)
+target_link_libraries(IReminderServer fort)
 
