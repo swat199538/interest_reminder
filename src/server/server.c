@@ -69,6 +69,7 @@ int processCommand(iRClient *c);
 static struct iRCommand* lookupCommand(char *name);
 static void resetClient(iRClient *c);
 static void call(iRClient *c, struct iRCommand *cmd);
+static void  stopCommand(iRClient *c);
 
 /*================================= Globals ================================= */
 struct iRServer server;
@@ -76,6 +77,7 @@ static struct iRCommand cmdTab[] = {
         {"add",   addCommand,         9},
         {"show",  showCommand,        1},
         {"showc", showConsoleCommand, 1},
+        {"stop",  stopCommand,        1},
 };
 /*============================ Utility functions ============================ */
 static void freeClient(iRClient *c)
@@ -632,6 +634,10 @@ static void showConsoleCommand(iRClient *c){
     ft_destroy_table(table);
 }
 
+static void stopCommand(iRClient *c){
+    IR_NOTUSED(c);
+    aeStop(server.el);
+}
 
 /*================================= Command ================================= */
 
